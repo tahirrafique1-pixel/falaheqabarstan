@@ -15,46 +15,97 @@
         .rounded-\[1\.5rem\] { border-radius: 1.5rem; }
         .rounded-\[2rem\] { border-radius: 2rem; }
 /* Updated Modal Style: White Background with Emerald Text */
+/* Container for the modal to handle centering and overflow */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7); /* slate-900 with opacity */
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* The Modal Box */
+/* Optimized Modal Container */
 .modal-white-emerald {
     background: #ffffff;
-    width: 80%;
-    max-width: 450px;
-    height:auto;
+    width: 95%;           /* mobile default */
+    max-width: 650px;     /* increased for laptop browsers */
+    max-height: 90vh; 
     border-radius: 2rem;
-    padding: 2rem;
-    border: 2px solid #065f46; /* Emerald border */
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
 }
 
+/* Scrollable Form Body with Grid */
+.modal-body-scroll {
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 1fr; /* Stacked by default */
+    gap: 1rem;
+}
+
+/* Desktop: 2 columns to fill space better on laptops */
+@media (min-width: 640px) {
+    .modal-body-scroll {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+    /* Make Detail and Image links span full width */
+    .span-full {
+        grid-column: span 2;
+    }
+}
+
+/* Inputs styled to 100% of their container */
 .input-emerald {
-    width: 100%;
+    width: 100% !important; 
     padding: 0.8rem 1rem;
     margin-top: 0.4rem;
-    margin-bottom: 1rem;
     border-radius: 1rem;
-    border: 1.5px solid #ecfdf5; /* Light emerald tint */
-    background: #f9fafb;
-    color: #064e3b; /* Emerald Deep */
+    border: 1.5px solid #f1f5f9;
+    background: #f8fafc;
+    color: #064e3b;
     font-weight: 600;
     outline: none;
-    transition: all 0.2s;
 }
-
-.input-emerald:focus {
-    border-color: #10b981; /* Emerald Light */
+/*.modal-white-emerald {
     background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    width: 100%;
+    max-width: 450px;
+    /* Responsive height: fits content but won't exceed screen height */
+    max-height: 90vh; 
+    border-radius: 2rem;
+    border: 2px solid #065f46;
+    display: flex;
+    flex-direction: column; /* Stack header, body, footer */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: auto; /* Clips children to the border radius */
 }
 
-.label-emerald {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: #059669; /* Emerald */
-    letter-spacing: 0.05em;
-    margin-left: 0.5rem;
+/* Scrollable Form Body */
+.modal-body-scroll {
+    overflow-y: auto;
+    padding: 0 2rem 1rem 2rem;
+    flex-grow: 1; /* Takes up available space */
 }
+
+/* Custom Scrollbar for the Emerald Theme */
+.modal-body-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-body-scroll::-webkit-scrollbar-thumb {
+    background-color: #059669;
+    border-radius: 10px;
+}*/
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 pb-28 antialiased">
@@ -499,39 +550,13 @@
         return d;
     }
 
-   /* function renderModal() {
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end justify-center p-4 pb-24';
-        modal.innerHTML = `
-            <div class="bg-white w-full max-w-lg rounded-[2rem] p-6 shadow-2xl border animate-slide-up">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-black text-emerald-800">${editId ? 'TERMEEM' : 'NAYA RIKORD'}</h3>
-                    <button id="closeModalBtn" class="p-2 hover:bg-slate-100 rounded-xl"><i class="fas fa-times"></i></button>
-                </div>
-                <form id="entryForm" class="space-y-4">
-                    <input type="date" id="modalDate" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.date}">
-                    <input type="text" id="modalName" placeholder="Naam likhein" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.name || ''}">
-                    <input type="text" id="modalDetail" placeholder="Tafseel likhein" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.detail}">
-                    <input type="number" id="modalAmount" placeholder="Raqam" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.amount}">
-                    <select id="modalType" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm">
-                        <option value="income" ${formData.type==='income'?'selected':''}>Aamad</option>
-                        <option value="expense" ${formData.type==='expense'?'selected':''}>Kharcha</option>
-                    </select>
-                    <input type="url" id="modalImage" placeholder="Bill image link" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.image||''}">
-                    <button type="submit" class="w-full bg-emerald-800 text-white p-5 rounded-[1.5rem] font-black text-sm shadow-lg flex justify-center items-center gap-2"><i class="fas fa-save"></i> MAHFOZ KAREIN</button>
-                </form>
-            </div>
-        `;
-        return modal;
-    }*/
-function renderModal() {
+   function renderModal() {
     const modalContainer = document.createElement('div');
-    // Backdrop remains slightly dark to make the white modal pop
-    modalContainer.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+    modalContainer.className = 'modal-overlay';
     
     modalContainer.innerHTML = `
         <div class="modal-white-emerald animate-slide-up">
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center p-6 pb-4 bg-white">
                 <h2 class="text-xl font-black text-[#064e3b] uppercase">
                     ${editId ? 'ترمیم ریکارڈ' : 'نیا ریکارڈ'}
                 </h2>
@@ -540,37 +565,40 @@ function renderModal() {
                 </button>
             </div>
             
-            <form id="entryForm">
-                <label class="label-emerald">Tariqh / Date</label>
-                <input type="date" id="modalDate" class="input-emerald" value="${formData.date}">
+            <form id="entryForm" class="flex flex-col overflow-hidden">
+                <div class="modal-body-scroll">
+                    <label class="label-emerald">Tariqh / Date</label>
+                    <input type="date" id="modalDate" class="input-emerald" value="${formData.date}">
 
-                <label class="label-emerald">Naam / Name</label>
-                <input type="text" id="modalName" placeholder="Naam likhein" class="input-emerald" value="${formData.name || ''}">
+                    <label class="label-emerald">Naam / Name</label>
+                    <input type="text" id="modalName" placeholder="Naam likhein" class="input-emerald" value="${formData.name || ''}">
 
-                <label class="label-emerald">Tafseel / Detail</label>
-                <input type="text" id="modalDetail" placeholder="Tafseel likhein" class="input-emerald" value="${formData.detail}">
+                    <label class="label-emerald">Tafseel / Detail</label>
+                    <input type="text" id="modalDetail" placeholder="Tafseel likhein" class="input-emerald" value="${formData.detail}">
 
-                <label class="label-emerald">Raqam / Amount</label>
-                <input type="number" id="modalAmount" placeholder="0.00" class="input-emerald" value="${formData.amount}">
+                    <label class="label-emerald">Raqam / Amount</label>
+                    <input type="number" id="modalAmount" placeholder="0.00" class="input-emerald" value="${formData.amount}">
 
-                <label class="label-emerald">Qism / Category</label>
-                <select id="modalType" class="input-emerald">
-                    <option value="income" ${formData.type==='income'?'selected':''}>Aamad (Income)</option>
-                    <option value="expense" ${formData.type==='expense'?'selected':''}>Kharcha (Expense)</option>
-                </select>
+                    <label class="label-emerald">Qism / Category</label>
+                    <select id="modalType" class="input-emerald">
+                        <option value="income" ${formData.type==='income'?'selected':''}>Aamad (Income)</option>
+                        <option value="expense" ${formData.type==='expense'?'selected':''}>Kharcha (Expense)</option>
+                    </select>
 
-                <label class="label-emerald">Bill Link (Optional)</label>
-                <input type="url" id="modalImage" placeholder="https://..." class="input-emerald" value="${formData.image||''}">
+                    <label class="label-emerald">Bill Link (Optional)</label>
+                    <input type="url" id="modalImage" placeholder="https://..." class="input-emerald" value="${formData.image||''}">
+                </div>
 
-                <button type="submit" class="w-full mt-4 p-4 bg-[#059669] hover:bg-[#064e3b] text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                    <i class="fas fa-check-circle"></i> محفوظ کریں (SAVE)
-                </button>
+                <div class="p-6 pt-2 bg-white border-t border-slate-100">
+                    <button type="submit" class="w-full p-4 bg-[#059669] hover:bg-[#064e3b] text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fas fa-check-circle"></i> محفوظ کریں (SAVE)
+                    </button>
+                </div>
             </form>
         </div>
     `;
     return modalContainer;
 }
-
     function renderLoginModal() {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-6';
