@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Falah‑e‑Qabristan · Committee 227/228</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .backdrop-blur-md { backdrop-filter: blur(8px); }
+        .group:hover .group-hover\:opacity-100 { opacity: 1; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .rounded-\[2\.5rem\] { border-radius: 2.5rem; }
+        .rounded-\[1\.5rem\] { border-radius: 1.5rem; }
+        .rounded-\[2rem\] { border-radius: 2rem; }
+/* Updated Modal Style: White Background with Emerald Text */
+.modal-white-emerald {
+    background: #ffffff;
+    width: 100%;
+    max-width: 450px;
+    border-radius: 2rem;
+    padding: 2rem;
+    border: 2px solid #065f46; /* Emerald border */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.input-emerald {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    margin-top: 0.4rem;
+    margin-bottom: 1rem;
+    border-radius: 1rem;
+    border: 1.5px solid #ecfdf5; /* Light emerald tint */
+    background: #f9fafb;
+    color: #064e3b; /* Emerald Deep */
+    font-weight: 600;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-emerald:focus {
+    border-color: #10b981; /* Emerald Light */
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.label-emerald {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #059669; /* Emerald */
+    letter-spacing: 0.05em;
+    margin-left: 0.5rem;
+}
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-28 antialiased">
+
+<script>
+    // ---------- GLOBAL STATE ----------
+    let user = { uid: 'local-session' };
+    let role = 'user';
+    let currentUserProfile = null;
+    let view = 'records';
+    let loginMode = null;
+    let transactions = [];
+    let auditLogs = [];
+    let adminUsers = [];
+
+    let phoneInput = '', passInput = '', nameInput = '';
+    let isModalOpen = false;
+    let formData = { date: new Date().toISOString().split('T')[0], name: '', detail: '', amount: '', type: 'income', image: '' };
+    let editId = null;
+    let searchTerm = '', dateFrom = '', dateTo = '';
+    let isLoading = false, error = '', successMsg = '';
+
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZi9dv_HI___e-cYPVCgL-HBrVWXJ7bVWe13PRh7EpTZVBeGU4xZXTjthcZzoGBeZPMA/exec';
+
+    async function loadAllData() {
+        try {
+            const url = APPS_SCRIPT_URL + '?action=getAll';
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.status === 'success') {
+                transactions = (data.transactions || []).sort((a,b) => new Date(b.date) - new Date(a.date));
+                auditLogs = (data.auditLogs || []).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+                adminUsers = (data.adminUsers || []);
+                renderApp();
+            } else {
+                console.error('Sheet load error', data);
+                setError(' Sheets se data load nahi ho saka.');
+            }
+        } catch (e) {
+            console.error(e);
+            setError('Network issue – Google Sheets connect nahi ho raha.');
+        }
+    }
+
+    async function addTransaction(payload) {
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    action: 'addTransaction',
+                    date: payload.date,
+                    name: payload.name || '',
+                    detail: payload.detail,
+                    amount: payload.amount,
+                    type: payload.type,
+                    image: payload.image || '',
+                    adminName: payload.adminName || currentUserProfile?.name || 'admin',
+                    timestamp: Date.now()
+                })
+            });
+            setTimeout(loadAllData, 300);
+        } catch(e){ console.error(e); setError('Submit failed.'); }
+    }
+
+    async function updateTransaction(id, payload) {
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: new URLSearchParams({
+                    action: 'updateTransaction',
+                    id: id,
+                    date: payload.date,
+                    name: payload.name || '',
+                    detail: payload.detail,
+                    amount: payload.amount,
+                    type: payload.type,
+                    image: payload.image || '',
+                    adminName: payload.adminName || currentUserProfile?.name
+                })
+            });
+            setTimeout(loadAllData, 400);
+        } catch(e){}
+    }
+
+    async function deleteTransaction(id) {
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: new URLSearchParams({ action: 'deleteTransaction', id: id })
+            });
+            setTimeout(loadAllData, 400);
+        } catch(e){}
+    }
+
+    async function addAuditLog(action, oldData, newData, admin) {
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: new URLSearchParams({
+                    action: 'addAuditLog',
+                    logAction: action,
+                    oldDetail: oldData?.detail || '',
+                    oldAmount: oldData?.amount || '',
+                    newDetail: newData?.detail || '',
+                    newAmount: newData?.amount || '',
+                    admin: admin || currentUserProfile?.name || 'system',
+                    timestamp: Date.now()
+                })
+            });
+        } catch(e){}
+    }
+
+    async function addAdminUser(name, phone, password) {
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: new URLSearchParams({
+                    action: 'addAdmin',
+                    name: name, phone: phone, password: password,
+                    status: 'pending', createdAt: Date.now()
+                })
+            });
+            setTimeout(loadAllData, 400);
+        } catch(e){}
+    }
+
+    async function updateAdminStatus(adminId, newStatus) {
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: new URLSearchParams({ action: 'updateAdminStatus', id: adminId, status: newStatus })
+            });
+            setTimeout(loadAllData, 400);
+        } catch(e){}
+    }
+
+    // ---------- AUTH ----------
+    function handleAdminLogin(e) {
+        e.preventDefault();
+        const foundAdmin = adminUsers.find(u => u.phone === phoneInput);
+        if (!foundAdmin) { setError('Ye mobile number registered nahi hai.'); renderApp(); return; }
+        if (foundAdmin.status === 'pending') { setError('Account Approval Pending! Developer se rabta karein.'); renderApp(); return; }
+        if (foundAdmin.status === 'locked') { setError('Account Locked! Auditor se rabta karein.'); renderApp(); return; }
+        if (foundAdmin.password === passInput) {
+            role = 'admin'; currentUserProfile = foundAdmin;
+            loginMode = null; passInput = ''; phoneInput = ''; error = ''; successMsg = '';
+            renderApp();
+        } else { setError('Ghalat Password!'); renderApp(); }
+    }
+
+    function handleRegister(e) {
+        e.preventDefault();
+        if (!user) { setError('System connect nahi hai.'); renderApp(); return; }
+        if (adminUsers.some(u => u.phone === phoneInput)) { setError('Ye mobile number pehle se registered hai.'); renderApp(); return; }
+        setIsLoading(true);
+        addAdminUser(nameInput, phoneInput, passInput);
+        setSuccessMsg('Login Successfully created. Kindly Contact with Developer for Approval.');
+        nameInput = ''; phoneInput = ''; passInput = ''; setIsLoading(false); renderApp();
+    }
+
+    function handleAuditorLogin(e) {
+        e.preventDefault();
+        if (passInput === '39268') {
+            role = 'auditor'; loginMode = null; error = ''; passInput = ''; renderApp();
+        } else { setError('Ghalat Auditor PIN!'); renderApp(); }
+    }
+
+    // ---------- TRANSACTION SAVE ----------
+    async function handleSaveEntry(e) {
+        e.preventDefault();
+        if (role !== 'admin' || !user) return;
+        setIsLoading(true);
+        try {
+            const payload = { 
+                ...formData, 
+                amount: Number(formData.amount), 
+                adminName: currentUserProfile?.name || 'admin',
+                timestamp: Date.now() 
+            };
+            if (editId) {
+                const old = transactions.find(t => t.id === editId);
+                await addAuditLog('MODIFIED', old, payload, currentUserProfile?.name);
+                await updateTransaction(editId, payload);
+            } else {
+                await addTransaction(payload);
+            }
+            isModalOpen = false; editId = null;
+            formData = { date: new Date().toISOString().split('T')[0], name: '', detail: '', amount: '', type: 'income', image: '' };
+        } catch (err) { console.error(err); } finally { setIsLoading(false); renderApp(); }
+    }
+
+    async function handleDelete(id) {
+        if (role !== 'admin' || !window.confirm('Khatam kar dein?')) return;
+        const old = transactions.find(t => t.id === id);
+        await addAuditLog('DELETED', old, null, currentUserProfile?.name);
+        await deleteTransaction(id);
+    }
+
+    function setError(msg) { error = msg; successMsg = ''; }
+    function setSuccessMsg(msg) { successMsg = msg; error = ''; }
+    function setIsLoading(val) { isLoading = val; }
+
+    // ---------- FILTER (now searches by NAME) ----------
+    function getFilteredTransactions() {
+        return transactions.filter(t => {
+            const matchesSearch = searchTerm 
+                ? (t.name || '').toLowerCase().includes(searchTerm.toLowerCase()) 
+                : true;
+            const matchesFrom = dateFrom ? new Date(t.date) >= new Date(dateFrom) : true;
+            const matchesTo = dateTo ? new Date(t.date) <= new Date(dateTo) : true;
+            return matchesSearch && matchesFrom && matchesTo;
+        });
+    }
+
+    function getStats() {
+        const filtered = getFilteredTransactions();
+        const inc = filtered.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
+        const exp = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+        return { inc, exp, bal: inc - exp };
+    }
+
+    // ---------- RENDER ----------
+    function renderApp() {
+        const root = document.getElementById('root');
+        root.innerHTML = '';
+        root.appendChild(createAppElement());
+    }
+
+    function createAppElement() {
+        const container = document.createElement('div');
+        container.className = 'min-h-screen bg-slate-50 text-slate-900 pb-28';
+        const stats = getStats();
+        const header = document.createElement('div');
+        header.className = 'bg-emerald-900 text-white p-6 rounded-b-[2.5rem] shadow-xl';
+        header.innerHTML = `
+            <div class="max-w-4xl mx-auto flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-500 p-2 rounded-xl"><i class="fas fa-wallet text-white" style="font-size:24px"></i></div>
+                    <div>
+                        <h1 class="text-xl font-black">Falah-e-Qubristan</h1>
+                        <p class="text-[10px] text-emerald-300 font-bold uppercase">Committee 227/228 RB</p>
+                    </div>
+                </div>
+                ${role === 'user' ? `
+                    <div class="flex gap-2">
+                        <button id="showAdminLoginBtn" class="text-[10px] font-black bg-white/10 px-4 py-2 rounded-lg border border-white/10">LOGIN</button>
+                        <button id="showAuditorLoginBtn" class="text-[10px] font-black bg-emerald-600 px-4 py-2 rounded-lg">AUDITOR</button>
+                    </div>
+                ` : `
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <p class="text-[8px] opacity-60 uppercase font-black tracking-widest leading-none">Signed in as</p>
+                            <p class="text-[10px] font-black">${role === 'auditor' ? 'AUDITOR' : currentUserProfile?.name || ''}</p>
+                        </div>
+                        <button id="logoutBtn" class="bg-red-500/20 p-2 rounded-xl border border-red-500/30"><i class="fas fa-sign-out-alt text-white"></i></button>
+                    </div>
+                `}
+            </div>
+            <div class="max-w-4xl mx-auto grid grid-cols-3 gap-3">
+                <div class="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
+                    <p class="text-[9px] opacity-50 uppercase font-black">Aamad</p>
+                    <p class="text-sm font-black">Rs ${stats.inc.toLocaleString()}</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
+                    <p class="text-[9px] opacity-50 uppercase font-black">Kharch</p>
+                    <p class="text-sm font-black text-red-200">Rs ${stats.exp.toLocaleString()}</p>
+                </div>
+                <div class="bg-emerald-500/20 p-4 rounded-3xl backdrop-blur-md border border-emerald-400/20">
+                    <p class="text-[9px] opacity-50 uppercase font-black">Balance</p>
+                    <p class="text-sm font-black text-emerald-300">Rs ${stats.bal.toLocaleString()}</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(header);
+
+        const main = document.createElement('main');
+        main.className = 'max-w-4xl mx-auto px-4 -mt-6';
+
+        const tabsDiv = document.createElement('div');
+        tabsDiv.className = 'flex bg-white p-1 rounded-[1.5rem] shadow-lg border mb-6 sticky top-4 z-40';
+        tabsDiv.innerHTML = `
+            <button id="viewRecordsBtn" class="flex-1 py-3.5 rounded-2xl text-[10px] font-black transition ${view === 'records' ? 'bg-emerald-800 text-white shadow-lg' : 'text-slate-400'}">RECORDS</button>
+            <button id="viewReportsBtn" class="flex-1 py-3.5 rounded-2xl text-[10px] font-black transition ${view === 'reports' ? 'bg-emerald-800 text-white shadow-lg' : 'text-slate-400'}">REPORTS</button>
+            ${role === 'auditor' ? `<button id="viewUsersBtn" class="flex-1 py-3.5 rounded-2xl text-[10px] font-black transition ${view === 'users' ? 'bg-emerald-800 text-white shadow-lg' : 'text-slate-400'}">APPROVALS</button>` : ''}
+            ${role === 'admin' || role === 'auditor' ? `<button id="viewAuditBtn" class="flex-1 py-3.5 rounded-2xl text-[10px] font-black transition ${view === 'audit' ? 'bg-emerald-800 text-white shadow-lg' : 'text-slate-400'}">LOGS</button>` : ''}
+        `;
+        main.appendChild(tabsDiv);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'space-y-3 w-full';
+        if (view === 'records') contentDiv.appendChild(renderRecordsView());
+        else if (view === 'reports') contentDiv.appendChild(renderReportsView());
+        else if (view === 'users' && role === 'auditor') contentDiv.appendChild(renderUsersView());
+        else if (view === 'audit' && (role === 'admin' || role === 'auditor')) contentDiv.appendChild(renderAuditView());
+        main.appendChild(contentDiv);
+        container.appendChild(main);
+
+        if (role === 'admin') {
+            const plusBtn = document.createElement('button');
+            plusBtn.id = 'openModalBtn';
+            plusBtn.className = 'fixed bottom-28 right-6 w-16 h-16 bg-emerald-800 text-white rounded-[1.5rem] shadow-2xl flex items-center justify-center border-4 border-white z-50 active:scale-95 transition-transform';
+            plusBtn.innerHTML = '<i class="fas fa-plus text-3xl"></i>';
+            container.appendChild(plusBtn);
+        }
+
+        if (isModalOpen) container.appendChild(renderModal());
+        if (loginMode) container.appendChild(renderLoginModal());
+
+        setTimeout(() => attachEvents(container), 20);
+        return container;
+    }
+
+    // ----- RECORDS VIEW (search by name + date range filter) -----
+    function renderRecordsView() {
+        const div = document.createElement('div');
+        div.className = 'space-y-3';
+        const filtered = getFilteredTransactions();
+        div.innerHTML = `
+            <div class="bg-white p-4 rounded-3xl shadow-sm border space-y-3">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-search text-slate-300"></i>
+                    <input type="text" id="searchInput" placeholder="Naam se talash karein..." class="bg-transparent border-none outline-none text-sm w-full font-bold" value="${searchTerm}">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2 uppercase">From Date</label>
+                        <input type="date" id="recordDateFrom" class="w-full bg-slate-50 border p-3 rounded-2xl text-xs font-bold" value="${dateFrom}">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2 uppercase">To Date</label>
+                        <input type="date" id="recordDateTo" class="w-full bg-slate-50 border p-3 rounded-2xl text-xs font-bold" value="${dateTo}">
+                    </div>
+                </div>
+                ${(searchTerm || dateFrom || dateTo) ? `
+                    <div class="flex justify-between items-center pt-1">
+                        <p class="text-[10px] font-black text-slate-400">${filtered.length} record(s) found</p>
+                        <button id="clearFiltersBtn" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-lg"><i class="fas fa-times"></i> Clear Filters</button>
+                    </div>
+                ` : ''}
+            </div>
+            ${filtered.length === 0 ? '<div class="text-center py-10 text-slate-400 text-sm font-black uppercase">No records found</div>' : ''}
+        `;
+        filtered.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-5 rounded-[2rem] shadow-sm border flex items-center gap-4 group hover:border-emerald-200 transition';
+            card.innerHTML = `
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${t.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}">
+                    <i class="fas ${t.type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down'} text-2xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[9px] text-slate-400 font-black mb-1 uppercase flex gap-2">
+                        <span>${t.date || ''}</span><span>|</span><span>${t.adminName || ''}</span>
+                    </div>
+                    <h4 class="text-sm font-black text-emerald-800 truncate">${t.name || ''}</h4>
+                    <p class="text-xs text-slate-500 font-bold truncate">${t.detail || ''}</p>
+                    ${t.image ? `<button class="viewImageBtn text-[9px] text-emerald-600 font-black mt-2 bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-1.5 w-fit" data-img="${t.image}"><i class="fas fa-eye text-xs"></i> View Bill</button>` : ''}
+                </div>
+                <div class="text-right">
+                    <p class="text-base font-black ${t.type === 'income' ? 'text-blue-700' : 'text-red-700'}">${Number(t.amount || 0).toLocaleString()}</p>
+                    ${role === 'admin' ? `
+                        <div class="flex gap-2 mt-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button class="editBtn text-blue-500 p-1" data-id="${t.id}" data-date="${t.date}" data-name="${t.name || ''}" data-detail="${t.detail}" data-amount="${t.amount}" data-type="${t.type}" data-image="${t.image || ''}"><i class="fas fa-edit"></i></button>
+                            <button class="deleteBtn text-red-500 p-1" data-id="${t.id}"><i class="fas fa-trash"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            div.appendChild(card);
+        });
+        return div;
+    }
+
+    function renderReportsView() {
+        const d = document.createElement('div');
+        d.className = 'bg-white p-8 rounded-[2.5rem] shadow-lg border space-y-6';
+        d.innerHTML = `
+            <h3 class="text-lg font-black text-emerald-900 uppercase tracking-widest">Report Center</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-400 ml-2 uppercase">From</label>
+                    <input type="date" id="dateFromInput" class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold" value="${dateFrom}">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-400 ml-2 uppercase">To</label>
+                    <input type="date" id="dateToInput" class="w-full bg-slate-50 border p-4 rounded-2xl text-sm font-bold" value="${dateTo}">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                <button id="exportCsvBtn" class="bg-emerald-700 text-white p-5 rounded-[1.5rem] font-black flex items-center justify-center gap-2 shadow-xl active:scale-95 transition"><i class="fas fa-file-excel text-2xl"></i> DOWNLOAD EXCEL</button>
+               <!-- <button id="printPdfBtn" class="bg-slate-800 text-white p-5 rounded-[1.5rem] font-black flex items-center justify-center gap-2 shadow-xl active:scale-95 transition"><i class="fas fa-file-pdf text-2xl"></i> PRINT PDF</button>
+            </div>-->
+        `;
+        return d;
+    }
+
+    function renderUsersView() {
+        const d = document.createElement('div');
+        d.className = 'bg-white p-6 rounded-[2.5rem] shadow-lg border space-y-4';
+        d.innerHTML = '<h3 class="text-lg font-black text-emerald-900 mb-4 uppercase">Admin Management</h3>';
+        if (adminUsers.length === 0) d.innerHTML += '<p class="text-center text-slate-400 py-6 text-xs font-black">No Admins Registered</p>';
+        adminUsers.forEach(admin => {
+            const card = document.createElement('div');
+            card.className = 'p-4 bg-slate-50 rounded-2xl border flex items-center justify-between border-slate-100';
+            card.innerHTML = `
+                <div>
+                    <h5 class="font-black text-sm">${admin.name}</h5>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500 font-bold mt-0.5">
+                        <span>${admin.phone}</span><span>•</span>
+                        <span class="uppercase ${admin.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}">Status: ${admin.status}</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    ${admin.status !== 'active' ? `<button class="approveAdminBtn bg-emerald-600 text-white p-3 rounded-xl shadow-lg flex items-center gap-1.5 text-[10px] font-black" data-id="${admin.id}"><i class="fas fa-check-circle"></i> APPROVE</button>` : ''}
+                    ${admin.status === 'active' ? `<button class="lockAdminBtn bg-red-500 text-white p-3 rounded-xl shadow-lg flex items-center gap-1.5 text-[10px] font-black" data-id="${admin.id}"><i class="fas fa-lock"></i> LOCK</button>` : ''}
+                </div>
+            `;
+            d.appendChild(card);
+        });
+        return d;
+    }
+
+    function renderAuditView() {
+        const d = document.createElement('div');
+        d.className = 'space-y-4';
+        d.innerHTML = '<h3 class="text-lg font-black text-emerald-900 mb-2 uppercase px-2">History Logs</h3>';
+        auditLogs.slice(0, 30).forEach(log => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-5 rounded-[2rem] border-l-4 border-amber-500 shadow-sm border';
+            card.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-black uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded">${log.action || ''} BY ${log.admin || ''}</span>
+                    <span class="text-[9px] text-slate-400 font-bold">${log.timestamp ? new Date(Number(log.timestamp)).toLocaleString() : ''}</span>
+                </div>
+                <p class="text-xs text-slate-700 font-bold mt-1 leading-relaxed">
+                    ${log.oldDetail || ''} (Rs ${Number(log.oldAmount || 0).toLocaleString()})
+                </p>
+            `;
+            d.appendChild(card);
+        });
+        return d;
+    }
+
+   /* function renderModal() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end justify-center p-4 pb-24';
+        modal.innerHTML = `
+            <div class="bg-white w-full max-w-lg rounded-[2rem] p-6 shadow-2xl border animate-slide-up">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-black text-emerald-800">${editId ? 'TERMEEM' : 'NAYA RIKORD'}</h3>
+                    <button id="closeModalBtn" class="p-2 hover:bg-slate-100 rounded-xl"><i class="fas fa-times"></i></button>
+                </div>
+                <form id="entryForm" class="space-y-4">
+                    <input type="date" id="modalDate" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.date}">
+                    <input type="text" id="modalName" placeholder="Naam likhein" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.name || ''}">
+                    <input type="text" id="modalDetail" placeholder="Tafseel likhein" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.detail}">
+                    <input type="number" id="modalAmount" placeholder="Raqam" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.amount}">
+                    <select id="modalType" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm">
+                        <option value="income" ${formData.type==='income'?'selected':''}>Aamad</option>
+                        <option value="expense" ${formData.type==='expense'?'selected':''}>Kharcha</option>
+                    </select>
+                    <input type="url" id="modalImage" placeholder="Bill image link" class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm" value="${formData.image||''}">
+                    <button type="submit" class="w-full bg-emerald-800 text-white p-5 rounded-[1.5rem] font-black text-sm shadow-lg flex justify-center items-center gap-2"><i class="fas fa-save"></i> MAHFOZ KAREIN</button>
+                </form>
+            </div>
+        `;
+        return modal;
+    }*/
+function renderModal() {
+    const modalContainer = document.createElement('div');
+    // Backdrop remains slightly dark to make the white modal pop
+    modalContainer.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+    
+    modalContainer.innerHTML = `
+        <div class="modal-white-emerald animate-slide-up">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-[#064e3b] uppercase">
+                    ${editId ? 'ترمیم ریکارڈ' : 'نیا ریکارڈ'}
+                </h2>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-emerald-600 transition-colors">
+                    <i class="fas fa-times-circle text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="entryForm">
+                <label class="label-emerald">Tariqh / Date</label>
+                <input type="date" id="modalDate" class="input-emerald" value="${formData.date}">
+
+                <label class="label-emerald">Naam / Name</label>
+                <input type="text" id="modalName" placeholder="Naam likhein" class="input-emerald" value="${formData.name || ''}">
+
+                <label class="label-emerald">Tafseel / Detail</label>
+                <input type="text" id="modalDetail" placeholder="Tafseel likhein" class="input-emerald" value="${formData.detail}">
+
+                <label class="label-emerald">Raqam / Amount</label>
+                <input type="number" id="modalAmount" placeholder="0.00" class="input-emerald" value="${formData.amount}">
+
+                <label class="label-emerald">Qism / Category</label>
+                <select id="modalType" class="input-emerald">
+                    <option value="income" ${formData.type==='income'?'selected':''}>Aamad (Income)</option>
+                    <option value="expense" ${formData.type==='expense'?'selected':''}>Kharcha (Expense)</option>
+                </select>
+
+                <label class="label-emerald">Bill Link (Optional)</label>
+                <input type="url" id="modalImage" placeholder="https://..." class="input-emerald" value="${formData.image||''}">
+
+                <button type="submit" class="w-full mt-4 p-4 bg-[#059669] hover:bg-[#064e3b] text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> محفوظ کریں (SAVE)
+                </button>
+            </form>
+        </div>
+    `;
+    return modalContainer;
+}
+
+    function renderLoginModal() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-6';
+        let inner = '';
+        if (loginMode === 'admin') {
+            inner = `
+                <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border-2 border-emerald-100">
+                    <h3 class="text-2xl font-black text-emerald-900 mb-6">ADMIN LOGIN</h3>
+                    <form id="adminLoginForm" class="space-y-5">
+                        <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border"><i class="fas fa-phone text-slate-400"></i><input type="tel" id="loginPhone" placeholder="Mobile #" class="bg-transparent w-full outline-none font-bold" value="${phoneInput}"></div>
+                        <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border"><i class="fas fa-lock text-slate-400"></i><input type="password" id="loginPass" placeholder="Password" class="bg-transparent w-full outline-none font-bold" value="${passInput}"></div>
+                        <button type="submit" class="w-full bg-emerald-800 text-white p-5 rounded-2xl font-black shadow-xl">LOGIN</button>
+                        <p class="text-center text-[10px] font-bold text-slate-500">Naya admin? <button id="showRegisterBtn" class="text-emerald-700 underline">Register</button></p>
+                    </form>
+                    ${error ? `<p class="mt-4 text-red-600 text-xs font-black bg-red-50 p-3 rounded-xl"><i class="fas fa-exclamation-circle"></i> ${error}</p>` : ''}
+                </div>
+            `;
+        } else if (loginMode === 'auditor') {
+            inner = `
+                <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border-2 border-amber-200">
+                    <h3 class="text-2xl font-black text-amber-800 mb-6">AUDITOR PIN</h3>
+                    <form id="auditorLoginForm" class="space-y-5">
+                        <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border"><i class="fas fa-key text-slate-400"></i><input type="password" id="auditorPass" placeholder="PIN" class="bg-transparent w-full outline-none font-bold" value="${passInput}"></div>
+                        <button type="submit" class="w-full bg-amber-700 text-white p-5 rounded-2xl font-black shadow-xl">VERIFY</button>
+                    </form>
+                    ${error ? `<p class="mt-4 text-red-600 text-xs font-black">${error}</p>` : ''}
+                </div>
+            `;
+        } else if (loginMode === 'register') {
+            inner = `
+                <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border-2 border-emerald-100">
+                    <h3 class="text-2xl font-black text-emerald-900 mb-6">REGISTER</h3>
+                    <form id="registerForm" class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border"><i class="fas fa-user"></i><input type="text" id="regName" placeholder="Full Name" class="bg-transparent w-full outline-none font-bold" value="${nameInput}"></div>
+                        <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border"><i class="fas fa-phone"></i><input type="tel" id="regPhone" placeholder="Mobile" class="bg-transparent w-full outline-none font-bold" value="${phoneInput}"></div>
+                        <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border"><i class="fas fa-lock"></i><input type="password" id="regPass" placeholder="Password" class="bg-transparent w-full outline-none font-bold" value="${passInput}"></div>
+                        <button type="submit" class="w-full bg-emerald-800 text-white p-5 rounded-2xl font-black shadow-xl">REGISTER</button>
+                        <p class="text-center text-[10px] font-bold"><button id="backToAdminLogin" class="text-slate-500 underline">Back to login</button></p>
+                    </form>
+                    ${successMsg ? `<p class="mt-4 text-emerald-700 text-xs font-black bg-emerald-50 p-3 rounded-xl">${successMsg}</p>` : ''}
+                    ${error ? `<p class="mt-4 text-red-600 text-xs font-black">${error}</p>` : ''}
+                </div>
+            `;
+        }
+        modal.innerHTML = inner;
+        return modal;
+    }
+
+    // ---------- EVENTS ----------
+    function attachEvents(container) {
+        const logoutBtn = container.querySelector('#logoutBtn');
+        if (logoutBtn) logoutBtn.onclick = () => { role = 'user'; view = 'records'; currentUserProfile = null; renderApp(); };
+
+        const showAdmin = container.querySelector('#showAdminLoginBtn');
+        if (showAdmin) showAdmin.onclick = () => { loginMode = 'admin'; error = ''; renderApp(); };
+        const showAuditor = container.querySelector('#showAuditorLoginBtn');
+        if (showAuditor) showAuditor.onclick = () => { loginMode = 'auditor'; error = ''; renderApp(); };
+
+        const recBtn = container.querySelector('#viewRecordsBtn');
+        if (recBtn) recBtn.onclick = () => { view = 'records'; renderApp(); };
+        const repBtn = container.querySelector('#viewReportsBtn');
+        if (repBtn) repBtn.onclick = () => { view = 'reports'; renderApp(); };
+        const usersBtn = container.querySelector('#viewUsersBtn');
+        if (usersBtn) usersBtn.onclick = () => { view = 'users'; renderApp(); };
+        const auditBtn = container.querySelector('#viewAuditBtn');
+        if (auditBtn) auditBtn.onclick = () => { view = 'audit'; renderApp(); };
+
+        // search by name
+        const searchInp = container.querySelector('#searchInput');
+        if (searchInp) searchInp.oninput = (e) => { searchTerm = e.target.value; renderApp(); };
+
+        // date range filters in records view
+        const recDateFrom = container.querySelector('#recordDateFrom');
+        if (recDateFrom) recDateFrom.onchange = (e) => { dateFrom = e.target.value; renderApp(); };
+        const recDateTo = container.querySelector('#recordDateTo');
+        if (recDateTo) recDateTo.onchange = (e) => { dateTo = e.target.value; renderApp(); };
+
+        // clear filters button
+        const clearBtn = container.querySelector('#clearFiltersBtn');
+        if (clearBtn) clearBtn.onclick = () => { searchTerm = ''; dateFrom = ''; dateTo = ''; renderApp(); };
+
+        // reports date filters (keep them synced)
+        const fromInp = container.querySelector('#dateFromInput');
+        if (fromInp) fromInp.onchange = (e) => { dateFrom = e.target.value; renderApp(); };
+        const toInp = container.querySelector('#dateToInput');
+        if (toInp) toInp.onchange = (e) => { dateTo = e.target.value; renderApp(); };
+
+        // edit / delete
+        container.querySelectorAll('.editBtn').forEach(btn => {
+            btn.onclick = (e) => {
+                const d = e.currentTarget.dataset;
+                formData = { date: d.date, name: d.name || '', detail: d.detail, amount: d.amount, type: d.type, image: d.image };
+                editId = d.id;
+                isModalOpen = true;
+                renderApp();
+            };
+        });
+        container.querySelectorAll('.deleteBtn').forEach(btn => {
+            btn.onclick = (e) => { handleDelete(e.currentTarget.dataset.id); };
+        });
+
+        const plus = container.querySelector('#openModalBtn');
+        if (plus) plus.onclick = () => { editId = null; formData = { date: new Date().toISOString().split('T')[0], name: '', detail: '', amount: '', type: 'income', image: '' }; isModalOpen = true; renderApp(); };
+        const closeModal = container.querySelector('#closeModalBtn');
+        if (closeModal) closeModal.onclick = () => { isModalOpen = false; renderApp(); };
+
+        // entry form submit (with name field)
+        const entryForm = container.querySelector('#entryForm');
+        if (entryForm) entryForm.onsubmit = (e) => { e.preventDefault(); 
+            formData.date = document.getElementById('modalDate')?.value || formData.date;
+            formData.name = document.getElementById('modalName')?.value || '';
+            formData.detail = document.getElementById('modalDetail')?.value;
+            formData.amount = document.getElementById('modalAmount')?.value;
+            formData.type = document.getElementById('modalType')?.value;
+            formData.image = document.getElementById('modalImage')?.value;
+            handleSaveEntry(e);
+        };
+
+        const adminForm = container.querySelector('#adminLoginForm');
+        if (adminForm) adminForm.onsubmit = (e) => { e.preventDefault(); 
+            phoneInput = document.getElementById('loginPhone')?.value || ''; 
+            passInput = document.getElementById('loginPass')?.value || ''; 
+            handleAdminLogin(e); 
+        };
+        const showRegister = container.querySelector('#showRegisterBtn');
+        if (showRegister) showRegister.onclick = (e) => { e.preventDefault(); loginMode = 'register'; error=''; successMsg=''; renderApp(); };
+        const backToAdmin = container.querySelector('#backToAdminLogin');
+        if (backToAdmin) backToAdmin.onclick = (e) => { e.preventDefault(); loginMode = 'admin'; renderApp(); };
+        const registerForm = container.querySelector('#registerForm');
+        if (registerForm) registerForm.onsubmit = (e) => { e.preventDefault();
+            nameInput = document.getElementById('regName')?.value || '';
+            phoneInput = document.getElementById('regPhone')?.value || '';
+            passInput = document.getElementById('regPass')?.value || '';
+            handleRegister(e);
+        };
+        const auditorForm = container.querySelector('#auditorLoginForm');
+        if (auditorForm) auditorForm.onsubmit = (e) => { e.preventDefault(); 
+            passInput = document.getElementById('auditorPass')?.value || ''; 
+            handleAuditorLogin(e); 
+        };
+
+        container.querySelectorAll('.approveAdminBtn').forEach(btn => {
+            btn.onclick = (e) => { updateAdminStatus(e.currentTarget.dataset.id, 'active'); };
+        });
+        container.querySelectorAll('.lockAdminBtn').forEach(btn => {
+            btn.onclick = (e) => { updateAdminStatus(e.currentTarget.dataset.id, 'locked'); };
+        });
+
+        const csvBtn = container.querySelector('#exportCsvBtn');
+        if (csvBtn) csvBtn.onclick = () => {
+            const filtered = getFilteredTransactions();
+            const csv = "Date,Name,Detail,Type,Amount,Admin\n" + filtered.map(t => `${t.date},"${t.name || ''}","${t.detail}",${t.type},${t.amount},${t.adminName}`).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `Falah_Report_${new Date().toLocaleDateString()}.csv`; a.click();
+        };
+        const printBtn = container.querySelector('#printPdfBtn');
+        if (printBtn) printBtn.onclick = () => window.print();
+
+        container.querySelectorAll('.viewImageBtn').forEach(btn => {
+            btn.onclick = (e) => { window.open(e.currentTarget.dataset.img); };
+        });
+    }
+
+    window.onload = () => { loadAllData(); };
+</script>
+
+<div id="root" class="min-h-screen bg-slate-50"></div>
+<script>
+    window.addEventListener('DOMContentLoaded', ()=>{
+        if (transactions.length===0) renderApp();
+    });
+</script>
+
+</body>
+</html>
