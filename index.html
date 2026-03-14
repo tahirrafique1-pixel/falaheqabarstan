@@ -261,7 +261,7 @@
     function handleRegister(e) {
         e.preventDefault();
         if (!user) { setError('System connect nahi hai.'); renderApp(); return; }
-        if (adminUsers.some(u => u.phone ==="'" + phoneInput)) { setError('Ye mobile number pehle se registered hai.'); renderApp(); return; }
+        if (adminUsers.some(u => u.phone === phoneInput)) { setError('Ye mobile number pehle se registered hai.'); renderApp(); return; }
         setIsLoading(true);
         addAdminUser(nameInput, phoneInput, passInput);
         setSuccessMsg('Login Successfully created. Kindly Contact with Developer for Approval.');
