@@ -247,7 +247,7 @@
     // ---------- AUTH ----------
     function handleAdminLogin(e) {
         e.preventDefault();
-        const foundAdmin = adminUsers.find(u => u.phone ==="'" + phoneInput);
+        const foundAdmin = adminUsers.find(u => u.phone === phoneInput);
         if (!foundAdmin) { setError('Ye mobile number registered nahi hai.'); renderApp(); return; }
         if (foundAdmin.status === 'pending') { setError('Account Approval Pending! Developer se rabta karein.'); renderApp(); return; }
         if (foundAdmin.status === 'locked') { setError('Account Locked! Auditor se rabta karein.'); renderApp(); return; }
