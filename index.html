@@ -50,22 +50,22 @@ body::before {
     border-radius: 15px; 
     padding: 15px; 
     margin-bottom: 20px;
-    display: flex;
+    display: block;
     justify-content: space-between;
     align-items: center;
 }
 .header-left {
-    display: flex;
+    display: block;
     align-items: center;
     gap: 15px;
 }
 .header-logo {
-    height: 50px;
+    height: 66px;
     width: auto;
     border-radius: 10px;
 }
 .header-title {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
     background: linear-gradient(45deg, #667eea, #764ba2);
     -webkit-background-clip: text;
@@ -73,7 +73,7 @@ body::before {
     margin: 0;
 }
 .header-user-info {
-    text-align: right;
+    text-align: left;
 }
 .user-name {
     font-weight: bold;
@@ -120,6 +120,208 @@ body::before {
 .photo-preview { max-width: 100px; max-height: 100px; margin: 10px 0; border-radius: 5px; object-fit: cover; }
 .photo-upload-info { font-size: 11px; color: #666; margin-top: 5px; }
 .logo-preview { max-width: 150px; max-height: 150px; margin: 10px auto; display: block; border-radius: 10px; }
+/* Responsive Header Styles */
+.header {
+    background: white;
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.header-logo {
+    height: 40px;
+    width: auto;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.header-title {
+    font-weight: bold;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.header-user-info {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.header-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.user-name {
+    font-weight: bold;
+    color: #667eea;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+.user-area {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-left {
+        min-width: 100%;
+    }
+    
+    .header-user-info {
+        text-align: left;
+        min-width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .user-name, .user-area {
+        max-width: 120px;
+    }
+    
+    .header-buttons {
+        flex-shrink: 0;
+    }
+}
+
+/* Additional Responsive Fixes */
+@media (max-width: 768px) {
+    .action-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+    }
+    
+    .action-btn {
+        padding: 10px 3px;
+        font-size: 12px;
+    }
+    
+    .action-btn i {
+        font-size: 20px;
+    }
+    
+    .quick-stats {
+        gap: 10px;
+    }
+    
+    .stat-card {
+        padding: 15px 10px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+    
+    .tab-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 8px;
+        font-size: 12px;
+        min-width: 60px;
+    }
+    
+    .list-item {
+        padding: 10px;
+        font-size: 13px;
+    }
+    
+    .list-item-actions i {
+        font-size: 16px;
+    }
+    
+    .donor-photo, .admin-photo {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-container {
+        padding: 10px;
+    }
+    
+    .action-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .action-btn span {
+        font-size: 10px;
+    }
+    
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .tab-btn {
+        padding: 6px;
+        font-size: 11px;
+    }
+    
+    .list-header {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .modal-dialog {
+        margin: 10px;
+    }
+    
+    /* Fix for very small screens */
+    .header-buttons {
+        flex-direction: row;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Fix for landscape orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+    .data-list {
+        max-height: 250px;
+    }
+    
+    .modal-dialog {
+        margin: 5px auto;
+    }
+}
 </style>
 </head>
 <body>
@@ -223,13 +425,12 @@ body::before {
 </div>
 
 <!-- Admin Requests Tab - Only visible to Master Admin -->
-<div id="adminRequestsSection" style="display: none;">
+<div id="adminRequestsSection" style="display: block;">
 <div class="tab-buttons mt-2">
 <button class="tab-btn" id="tab-adminRequests" onclick="switchTab('adminRequests')">Admin Requests</button>
 <button class="tab-btn" id="tab-manageAdmins" onclick="switchTab('manageAdmins')">Manage Admins</button>
 </div>
 </div>
-
 <div class="sync-status">
 <span><span class="sync-badge"></span> Connected to Sheets</span>
 <i class="bi bi-wifi" onclick="loadData()" style="cursor: pointer;"></i>
@@ -1199,6 +1400,7 @@ function searchInView(view) {
 }
 
 // --- UI HELPER FUNCTIONS ---
+// --- SWITCH TAB FUNCTION ---
 function switchTab(tab) {
     $('.tab-btn').removeClass('active');
     $(`#tab-${tab}`).addClass('active');
@@ -1225,11 +1427,17 @@ function logout() {
     location.reload();
 }
 
+// Updated showSettings function - only works for master admin
 function showSettings() {
+    if (!isMasterAdmin) {
+        showToast("Settings only available for Administrator");
+        return;
+    }
     document.getElementById('newPageTitle').value = appTitle;
     const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
     modal.show();
 }
+
 
 function exportToExcel() {
     const wb = XLSX.utils.book_new();
@@ -1310,6 +1518,29 @@ window.onload = async () => {
         }
         loginSuccess(u);
     }
+// Initialize admin section visibility
+function initializeAdminSection() {
+    const adminSection = document.getElementById('adminRequestsSection');
+    const settingsButton = document.getElementById('settingsButton');
+    
+    if (isMasterAdmin) {
+        if (adminSection) adminSection.style.display = 'block';
+        if (settingsButton) settingsButton.style.display = 'inline-block';
+        
+        // Ensure admin tabs are visible
+        const tab1 = document.getElementById('tab-adminRequests');
+        const tab2 = document.getElementById('tab-manageAdmins');
+        if (tab1) tab1.style.display = 'block';
+        if (tab2) tab2.style.display = 'block';
+    } else {
+        if (adminSection) adminSection.style.display = 'none';
+        if (settingsButton) settingsButton.style.display = 'none';
+    }
+}
+
+// Call this after login
+initializeAdminSection();
+
 };
 </script>
 </body>
