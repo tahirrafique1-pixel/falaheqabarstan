@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Falah-e-Qabarstan</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    min-height: 100vh; 
+    color: #333;
+    position: relative;
+}
+/* Background Logo */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path fill="white" d="M50 15 L60 40 L85 40 L65 55 L75 85 L50 70 L25 85 L35 55 L15 40 L40 40 Z"/></svg>');
+    background-repeat: repeat;
+    background-size: 100px 100px;
+    pointer-events: none;
+    z-index: 0;
+}
+.app-container { 
+    max-width: 100%; 
+    padding: 15px; 
+    position: relative;
+    z-index: 1;
+}
+.login-card, .header, .stat-card, .action-btn, .sync-status, .data-list, .tab-btn { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.login-card { background: white; border-radius: 20px; padding: 30px; max-width: 400px; margin: 50px auto; position: relative; }
+.phone-input { width: 100%; padding: 15px; font-size: 24px; text-align: center; letter-spacing: 8px; border: 2px solid #667eea; border-radius: 10px; margin: 20px 0; }
+.pin-input { width: 100%; padding: 15px; font-size: 24px; text-align: center; letter-spacing: 8px; border: 2px solid #667eea; border-radius: 10px; margin: 20px 0; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pin-btn { padding: 20px; font-size: 24px; border: none; background: #f0f0f0; border-radius: 10px; }
+.header { 
+    background: white; 
+    border-radius: 15px; 
+    padding: 15px; 
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    min-width: 200px;
+}
+.header-logo {
+    height: 50px;
+    width: auto;
+    border-radius: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    background: #f0f0f0;
+    padding: 5px;
+    max-width: 50px;
+    object-fit: contain;
+}
+.header-title-container {
+    display: flex;
+    flex-direction: column;
+}
+.header-title {
+    font-size: clamp(16px, 4vw, 24px);
+    font-weight: bold;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    line-height: 1.2;
+    cursor: pointer;
+}
+.header-address {
+    font-size: clamp(10px, 2.5vw, 12px);
+    color: #666;
+    cursor: pointer;
+    line-height: 1.4;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+}
+.header-address:hover {
+    color: #667eea;
+    text-decoration: underline;
+}
+.header-user-info {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 120px;
+}
+.user-name {
+    font-weight: bold;
+    color: #667eea;
+    font-size: clamp(12px, 3vw, 14px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+.user-area {
+    font-size: clamp(10px, 2.5vw, 12px);
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+.header-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+}
+.quick-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+.stat-card { background: white; border-radius: 15px; padding: 20px; text-align: center; }
+.stat-value { font-size: 24px; font-weight: bold; color: #667eea; }
+.action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.action-btn { background: white; border: none; border-radius: 12px; padding: 15px 5px; text-align: center; cursor: pointer; transition: all 0.3s; }
+.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+.action-btn i { font-size: 24px; color: #667eea; display: block; }
+.sync-status { display: flex; align-items: center; justify-content: space-between; background: white; border-radius: 10px; padding: 10px 15px; margin-bottom: 20px; font-size: 12px; }
+.sync-badge { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #28a745; }
+.data-list { background: white; border-radius: 15px; overflow: hidden; margin-bottom: 20px; max-height: 400px; overflow-y: auto; }
+.list-header { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 15px; font-weight: bold; position: sticky; top: 0; }
+.list-item { padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.list-item:last-child { border-bottom: none; }
+.list-item-actions { display: flex; gap: 10px; }
+.list-item-actions i { cursor: pointer; color: #667eea; font-size: 18px; }
+.tab-buttons { display: flex; background: white; border-radius: 10px; overflow: hidden; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { flex: 1; padding: 12px; border: none; background: white; cursor: pointer; min-width: 80px; }
+.tab-btn.active { background: linear-gradient(45deg, #667eea, #764ba2); color: white; }
+.toast-notification { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #333; color: white; padding: 15px; border-radius: 10px; text-align: center; display: none; z-index: 10000; }
+.admin-badge { position: absolute; bottom: 10px; right: 10px; font-size: 10px; color: #999; cursor: pointer; padding: 5px; }
+.admin-badge:hover { color: #667eea; }
+.status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+.status-active { background: #d4edda; color: #155724; }
+.status-pending { background: #fff3cd; color: #856404; }
+.status-locked { background: #f8d7da; color: #721c24; }
+.approve-btn { color: #28a745; cursor: pointer; margin-right: 10px; }
+.reject-btn { color: #dc3545; cursor: pointer; }
+.lock-btn { color: #ffc107; cursor: pointer; }
+.edit-btn { color: #667eea; cursor: pointer; }
+.delete-btn { color: #dc3545; cursor: pointer; }
+.donor-photo, .admin-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+.modal-lg { max-width: 500px; }
+.search-box { padding: 10px; margin-bottom: 10px; }
+.search-box input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+.photo-preview { max-width: 100px; max-height: 100px; margin: 10px 0; border-radius: 5px; object-fit: cover; }
+.photo-upload-info { font-size: 11px; color: #666; margin-top: 5px; }
+.logo-preview { max-width: 150px; max-height: 150px; margin: 10px auto; display: block; border-radius: 10px; }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .action-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+    }
+    
+    .action-btn {
+        padding: 10px 3px;
+        font-size: 12px;
+    }
+    
+    .action-btn i {
+        font-size: 20px;
+    }
+    
+    .quick-stats {
+        gap: 10px;
+    }
+    
+    .stat-card {
+        padding: 15px 10px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+    
+    .tab-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 8px;
+        font-size: 12px;
+        min-width: 60px;
+    }
+    
+    .list-item {
+        padding: 10px;
+        font-size: 13px;
+    }
+    
+    .list-item-actions i {
+        font-size: 16px;
+    }
+    
+    .donor-photo, .admin-photo {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .header-address {
+        max-width: 200px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-container {
+        padding: 10px;
+    }
+    
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-left {
+        min-width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .header-title-container {
+        width: calc(100% - 65px);
+    }
+    
+    .header-address {
+        max-width: 100%;
+        white-space: normal;
+        word-break: break-word;
+    }
+    
+    .header-user-info {
+        text-align: left;
+        min-width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .user-name, .user-area {
+        max-width: 120px;
+    }
+    
+    .action-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .action-btn span {
+        font-size: 10px;
+    }
+    
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .tab-btn {
+        padding: 6px;
+        font-size: 11px;
+    }
+    
+    .list-header {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .modal-dialog {
+        margin: 10px;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Fix for landscape orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+    .data-list {
+        max-height: 250px;
+    }
+    
+    .modal-dialog {
+        margin: 5px auto;
+    }
+}
+</style>
+</head>
+<body>
+
+<!-- ADMIN BADGE ON LOGIN FORM -->
+<div id="loginPage" class="app-container">
+<div class="login-card">
+<div class="text-center">
+<i class="bi bi-heart-fill" style="font-size: 48px; color: #667eea;"></i>
+<h2>Falah-e-Qabarstan</h2>
+</div>
+
+<input type="text" id="loginPhone" class="phone-input" placeholder="Mobile Number">
+<input type="password" id="loginPin" class="pin-input" maxlength="6" placeholder="Enter PIN">
+
+<button class="btn btn-primary w-100 mt-3" onclick="submitLogin()">Login</button>
+<button class="btn btn-link w-100 mt-3" onclick="showRegistrationForm()">New Admin? Register</button>
+<button class="btn btn-link w-100" onclick="showForgotPage()">Forgot Password?</button>
+
+<!-- ADMIN BADGE for Master Admin Login -->
+<div class="admin-badge" onclick="masterAdminLogin()">Administrator ⚡</div>
+</div>
+</div>
+
+<div id="registrationPage" class="app-container" style="display: none;">
+<div class="login-card">
+<h3 class="text-center">Admin Registration</h3>
+<form id="registrationForm">
+<div class="mb-2"><label>Full Name</label><input type="text" class="form-control" id="regName" required></div>
+<div class="mb-2"><label>Mobile</label><input type="text" pattern="[0-9]*" inputmode="numeric" class="form-control" id="regPhone" required></div>
+<div class="mb-2"><label>Area</label><select class="form-select" id="regArea"><option>228/Boghni</option><option>228/Bar</option></select></div>
+<div class="mb-2"><label>PIN</label><input type="password" class="form-control" id="regPin" maxlength="6" required></div>
+<div class="mb-2">
+<label>Profile Photo</label>
+<input type="file" id="regPhoto" class="form-control" accept=".jpg,.jpeg,.png" onchange="validateAndPreviewImage(this, 'regPhotoPreview')">
+<div class="photo-upload-info">Max size: 5MB (JPG, JPEG, PNG only)</div>
+<img id="regPhotoPreview" class="photo-preview" style="display: none;">
+</div>
+</form>
+<button class="btn btn-primary w-100 mt-3" onclick="registerAdmin()">Submit</button>
+<button class="btn btn-link w-100" onclick="showLoginPage()">Back</button>
+</div>
+</div>
+
+<div id="forgotPage" class="app-container" style="display: none;">
+<div class="login-card">
+<h3 class="text-center">Reset PIN</h3>
+<div class="mb-2">
+<label>Registered Mobile</label>
+<input type="text" pattern="[0-9]*" inputmode="numeric" id="fpPhone" class="form-control" placeholder="03XXXXXXXXX">
+</div>
+<div class="mb-2">
+<label>New PIN</label>
+<input type="password" id="fpNewPin" maxlength="6" class="form-control">
+</div>
+<button class="btn btn-warning w-100 mt-2" onclick="resetPin()">Reset PIN</button>
+<button class="btn btn-link w-100" onclick="showLoginPage()">Back to Login</button>
+</div>
+</div>
+
+<div id="mainApp" class="app-container" style="display: none;">
+<!-- Updated Header with Address -->
+<div class="header">
+    <div class="header-left">
+        <img id="appLogo" class="header-logo" src="" alt="Logo" onclick="changeLogo()">
+        <div class="header-title-container">
+            <h1 class="header-title" id="pageTitle" onclick="changeTitle()">Falah-e-Qabarstan</h1>
+            <div class="header-address" id="headerAddress" onclick="changeAddress()">Loading address...</div>
+        </div>
+    </div>
+    <div class="header-user-info">
+        <div class="user-name" id="headerAdminName">Admin</div>
+        <div class="user-area" id="headerAdminArea"></div>
+        <div class="mt-1 header-buttons">
+            <!-- Settings button only visible to master admin -->
+            <button class="btn btn-outline-primary btn-sm" id="settingsButton" onclick="showSettings()" style="display: none;"><i class="bi bi-gear"></i></button>
+            <button class="btn btn-outline-danger btn-sm ms-1" onclick="logout()"><i class="bi bi-power"></i></button>
+        </div>
+    </div>
+</div>
+
+<div class="quick-stats">
+<div class="stat-card"><div class="stat-value" id="statReceipts">0</div><div class="stat-label">Receipts</div></div>
+<div class="stat-card"><div class="stat-value" id="statAmount">0</div><div class="stat-label">Amount</div></div>
+<div class="stat-card"><div class="stat-value" id="statDonors">0</div><div class="stat-label">Donors</div></div>
+<div class="stat-card"><div class="stat-value" id="statBalance">0</div><div class="stat-label">Balance</div></div>
+</div>
+
+<div class="action-grid">
+<button class="action-btn" onclick="openModal('addDonorModal')"><i class="bi bi-person-plus"></i><span>Add Donor</span></button>
+<button class="action-btn" onclick="openModal('addReceiptModal')"><i class="bi bi-receipt"></i><span>Add Receipt</span></button>
+<button class="action-btn" onclick="openModal('addPaymentModal')"><i class="bi bi-cash"></i><span>Add Payment</span></button>
+<button class="action-btn" onclick="switchTab('donors')"><i class="bi bi-people"></i><span>Donors</span></button>
+<button class="action-btn" onclick="switchTab('receipts')"><i class="bi bi-list"></i><span>Receipts</span></button>
+<button class="action-btn" onclick="switchTab('payments')"><i class="bi bi-clock"></i><span>History</span></button>
+<button class="action-btn" onclick="generateSummary('donor')">
+<i class="bi bi-bar-chart"></i><span>Donor Summary</span>
+</button>
+<button class="action-btn" onclick="generateSummary('period')">
+<i class="bi bi-calendar"></i><span>Period Summary</span>
+</button>
+<button class="action-btn" onclick="generateSummary('area')">
+<i class="bi bi-geo"></i><span>Area Summary</span>
+</button>
+</div>
+
+<!-- Admin Requests Tab - Only visible to Master Admin -->
+<div id="adminRequestsSection" style="display: none;">
+    <div class="tab-buttons mt-2">
+        <button class="tab-btn" id="tab-adminRequests" onclick="switchTab('adminRequests')" style="display: block;">Admin Requests</button>
+        <button class="tab-btn" id="tab-manageAdmins" onclick="switchTab('manageAdmins')" style="display: block;">Manage Admins</button>
+    </div>
+</div>
+
+<div class="sync-status">
+<span><span class="sync-badge"></span> Connected to Sheets</span>
+<i class="bi bi-wifi" onclick="loadData()" style="cursor: pointer;"></i>
+</div>
+
+<div class="tab-buttons">
+<button class="tab-btn active" id="tab-donors" onclick="switchTab('donors')">Donors</button>
+<button class="tab-btn" id="tab-receipts" onclick="switchTab('receipts')">Receipts</button>
+<button class="tab-btn" id="tab-payments" onclick="switchTab('payments')">Payments</button>
+<button class="tab-btn" id="tab-donorSummary" onclick="switchTab('donorSummary')">Donor-wise</button>
+<button class="tab-btn" id="tab-periodSummary" onclick="switchTab('periodSummary')">Period-wise</button>
+<button class="tab-btn" id="tab-areaSummary" onclick="switchTab('areaSummary')">Area-wise</button>
+</div>
+
+<!-- All Views -->
+<div id="donorsView" class="data-list">
+<div class="list-header d-flex justify-content-between align-items-center">
+<span>Donors</span>
+<input type="text" id="searchDonors" class="form-control form-control-sm w-50" placeholder="Search..." onkeyup="searchInView('donors')">
+</div>
+<div id="donorsList"></div>
+</div>
+
+<div id="receiptsView" class="data-list" style="display:none">
+<div class="list-header">Receipts</div>
+<div id="receiptsList"></div>
+</div>
+
+<div id="paymentsView" class="data-list" style="display:none">
+<div class="list-header">Payments</div>
+<div id="paymentsList"></div>
+</div>
+
+<div id="donorSummaryView" class="data-list" style="display:none">
+<div class="list-header">Donor Summary</div>
+<div id="donorSummaryList"></div>
+</div>
+
+<div id="periodSummaryView" class="data-list" style="display:none">
+<div class="list-header">Period Summary</div>
+<div id="periodSummaryList"></div>
+</div>
+
+<div id="areaSummaryView" class="data-list" style="display:none">
+<div class="list-header">Area Summary</div>
+<div id="areaSummaryList"></div>
+</div>
+
+<div id="adminRequestsView" class="data-list" style="display:none">
+<div class="list-header">Pending Admin Registrations</div>
+<div id="adminRequestsList"></div>
+</div>
+
+<div id="manageAdminsView" class="data-list" style="display:none">
+<div class="list-header">Manage Admins</div>
+<div id="manageAdminsList"></div>
+</div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Add Donor Modal -->
+<div class="modal fade" id="addDonorModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5>Add Donor</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<input type="date" id="dDate" class="form-control mb-2">
+<input type="text" id="dName" placeholder="Name" class="form-control mb-2">
+<input type="text" pattern="[0-9]*" inputmode="numeric" id="dPhone" placeholder="Phone" class="form-control mb-2">
+<select id="dArea" class="form-select mb-2"><option>228/Boghni</option><option>228/Bar</option></select>
+<div class="mb-2">
+<input type="file" id="dPhoto" class="form-control" accept=".jpg,.jpeg,.png" onchange="validateAndPreviewImage(this, 'donorPreview')">
+<div class="photo-upload-info">Max size: 5MB (JPG, JPEG, PNG only)</div>
+</div>
+<img id="donorPreview" class="photo-preview" style="display: none;">
+</div>
+<div class="modal-footer"><button class="btn btn-primary w-100" onclick="saveDataWithPhoto('donor')">Save Donor</button></div>
+</div></div></div>
+
+<!-- Edit Donor Modal -->
+<div class="modal fade" id="editDonorModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5>Edit Donor</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<input type="hidden" id="editDonorId">
+<input type="hidden" id="editDonorPhotoUrl">
+<input type="date" id="editDDate" class="form-control mb-2">
+<input type="text" id="editDName" placeholder="Name" class="form-control mb-2">
+<input type="text" pattern="[0-9]*" inputmode="numeric" id="editDPhone" placeholder="Phone" class="form-control mb-2">
+<select id="editDArea" class="form-select mb-2"><option>228/Boghni</option><option>228/Bar</option></select>
+<div class="mb-2">
+<input type="file" id="editDPhoto" class="form-control" accept=".jpg,.jpeg,.png" onchange="validateAndPreviewImage(this, 'editDonorPreview')">
+<div class="photo-upload-info">Max size: 5MB (Leave empty to keep existing photo)</div>
+</div>
+<img id="editDonorPreview" class="photo-preview" style="display: none;">
+</div>
+<div class="modal-footer"><button class="btn btn-primary w-100" onclick="updateDonorWithPhoto()">Update Donor</button></div>
+</div></div></div>
+
+<!-- Add Receipt Modal -->
+<div class="modal fade" id="addReceiptModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5>Add Receipt</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<input type="date" id="rDate" class="form-control mb-2">
+<select id="rDonor" class="form-select mb-2"><option>Select Donor</option></select>
+<input type="number" id="rAmount" placeholder="Amount" class="form-control mb-2">
+<div class="mb-2">
+<input type="file" id="rPhoto" class="form-control" accept=".jpg,.jpeg,.png" onchange="validateAndPreviewImage(this, 'receiptPreview')">
+<div class="photo-upload-info">Max size: 5MB (JPG, JPEG, PNG only)</div>
+</div>
+<img id="receiptPreview" class="photo-preview" style="display: none;">
+</div>
+<div class="modal-footer"><button class="btn btn-success w-100" onclick="saveDataWithPhoto('receipt')">Save Receipt</button></div>
+</div></div></div>
+
+<!-- Add Payment Modal -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5>Add Payment</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<input type="date" id="pDate" class="form-control mb-2">
+<input type="text" id="pTo" placeholder="Paid To" class="form-control mb-2">
+<input type="text" id="pPurpose" placeholder="Purpose" class="form-control mb-2">
+<select id="pMode" class="form-select mb-2"><option>Cash</option><option>Online</option></select>
+<input type="number" id="pAmount" placeholder="Amount" class="form-control mb-2">
+</div>
+<div class="modal-footer"><button class="btn btn-warning w-100" onclick="saveDataWithPhoto('payment')">Save Payment</button></div>
+</div></div></div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5>Settings</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<div class="mb-3">
+<label>Change Logo</label>
+<input type="file" id="logoUpload" class="form-control" accept=".jpg,.jpeg,.png" onchange="previewLogo(this)">
+<img id="logoPreview" class="logo-preview" style="display: none;">
+<button class="btn btn-primary w-100 mt-2" onclick="saveLogoToSheet()">Save Logo to Sheet</button>
+</div>
+<div class="mb-3">
+<label>Change Page Title</label>
+<input type="text" id="newPageTitle" class="form-control" placeholder="Enter new title">
+<button class="btn btn-primary w-100 mt-2" onclick="saveTitleToSheet()">Save Title to Sheet</button>
+</div>
+<div class="mb-3">
+<label>Change Address</label>
+<input type="text" id="newAddress" class="form-control" placeholder="Enter organization address">
+<button class="btn btn-primary w-100 mt-2" onclick="saveAddressToSheet()">Save Address to Sheet</button>
+</div>
+<hr>
+<button class="btn btn-outline-secondary w-100 mb-2" onclick="exportToExcel()">Export Data</button>
+<button class="btn btn-danger w-100" onclick="logout()">Logout</button>
+</div>
+</div></div></div>
+
+<div id="toast" class="toast-notification"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx7-74e9zRChA7AOkrUXrElUdDKIU2MDkxwGV-erpuuOodxyP82tG2a_gEi9S563VNzJQ/exec";
+
+let currentAdmin = null;
+let donors = [], receipts = [], payments = [], admins = [];
+let isMasterAdmin = false;
+
+// Settings variables
+let appLogo = '';
+let appTitle = 'Falah-e-Qabarstan';
+let appAddress = '';
+
+// Maximum file size in bytes (5MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+// Allowed file types
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
+// --- LOAD SETTINGS FROM SHEET ---
+async function loadSettings() {
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=getSettings&t=${Date.now()}`);
+        const settings = await res.json();
+        
+        if (settings) {
+            appLogo = settings.logo || '';
+            appTitle = settings.title || 'Falah-e-Qabarstan';
+            appAddress = settings.address || 'Organization Address';
+            
+            // Update UI
+            document.getElementById('appLogo').src = appLogo || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><rect width="50" height="50" fill="%23f0f0f0"/><text x="10" y="30" fill="%23667eea">Logo</text></svg>';
+            document.getElementById('pageTitle').textContent = appTitle;
+            document.getElementById('headerAddress').textContent = appAddress;
+            
+            // Also save to localStorage as backup
+            localStorage.setItem('appLogo', appLogo);
+            localStorage.setItem('appTitle', appTitle);
+            localStorage.setItem('appAddress', appAddress);
+        }
+    } catch (e) {
+        console.log('Error loading settings:', e);
+        // Fallback to localStorage
+        appLogo = localStorage.getItem('appLogo') || '';
+        appTitle = localStorage.getItem('appTitle') || 'Falah-e-Qabarstan';
+        appAddress = localStorage.getItem('appAddress') || 'Organization Address';
+        
+        document.getElementById('appLogo').src = appLogo || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><rect width="50" height="50" fill="%23f0f0f0"/><text x="10" y="30" fill="%23667eea">Logo</text></svg>';
+        document.getElementById('pageTitle').textContent = appTitle;
+        document.getElementById('headerAddress').textContent = appAddress;
+    }
+}
+
+// --- LOGO FUNCTIONS ---
+function changeLogo() {
+    if (!isMasterAdmin) {
+        showToast("Only Administrator can change logo");
+        return;
+    }
+    document.getElementById('logoUpload').click();
+}
+
+function previewLogo(input) {
+    const preview = document.getElementById('logoPreview');
+    const file = input.files[0];
+    if (file && validateImageFile(file)) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+async function saveLogoToSheet() {
+    if (!isMasterAdmin) {
+        showToast("Only Administrator can save logo");
+        return;
+    }
+    
+    const file = document.getElementById('logoUpload').files[0];
+    if (!file) {
+        showToast("Please select a logo image first");
+        return;
+    }
+    
+    if (!validateImageFile(file)) return;
+    
+    showToast("Uploading logo...");
+    
+    try {
+        const base64 = await fileToBase64(file);
+        const formData = new FormData();
+        formData.append('action', 'saveSettings');
+        formData.append('setting', 'logo');
+        formData.append('value', base64);
+        formData.append('fileName', file.name);
+        formData.append('fileType', file.type);
+        
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+        
+        const response = await res.text();
+        
+        if (response.includes("SUCCESS")) {
+            appLogo = base64;
+            document.getElementById('appLogo').src = 'data:' + file.type + ';base64,' + base64;
+            document.getElementById('logoPreview').style.display = 'none';
+            document.getElementById('logoUpload').value = '';
+            showToast("Logo saved successfully!");
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+            if (modal) modal.hide();
+        } else {
+            showToast("Error saving logo: " + response);
+        }
+    } catch (e) {
+        showToast("Error: " + e.message);
+    }
+}
+
+// --- TITLE FUNCTIONS ---
+function changeTitle() {
+    if (!isMasterAdmin) {
+        showToast("Only Administrator can change title");
+        return;
+    }
+    document.getElementById('newPageTitle').value = appTitle;
+    showSettings();
+}
+
+async function saveTitleToSheet() {
+    if (!isMasterAdmin) {
+        showToast("Only Administrator can save title");
+        return;
+    }
+    
+    const newTitle = document.getElementById('newPageTitle').value;
+    if (!newTitle || !newTitle.trim()) {
+        showToast("Please enter a title");
+        return;
+    }
+    
+    showToast("Saving title...");
+    
+    try {
+        const formData = new FormData();
+        formData.append('action', 'saveSettings');
+        formData.append('setting', 'title');
+        formData.append('value', newTitle.trim());
+        
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+        
+        const response = await res.text();
+        
+        if (response.includes("SUCCESS")) {
+            appTitle = newTitle.trim();
+            document.getElementById('pageTitle').textContent = appTitle;
+            showToast("Title saved successfully!");
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+            if (modal) modal.hide();
+        } else {
+            showToast("Error saving title: " + response);
+        }
+    } catch (e) {
+        showToast("Error: " + e.message);
+    }
+}
+
+// --- ADDRESS FUNCTIONS ---
+function changeAddress() {
+    if (!isMasterAdmin) {
+        showToast("Only Administrator can change address");
+        return;
+    }
+    document.getElementById('newAddress').value = appAddress;
+    showSettings();
+}
+
+async function saveAddressToSheet() {
+    if (!isMasterAdmin) {
+        showToast("Only Administrator can save address");
+        return;
+    }
+    
+    const newAddress = document.getElementById('newAddress').value;
+    if (!newAddress || !newAddress.trim()) {
+        showToast("Please enter an address");
+        return;
+    }
+    
+    showToast("Saving address...");
+    
+    try {
+        const formData = new FormData();
+        formData.append('action', 'saveSettings');
+        formData.append('setting', 'address');
+        formData.append('value', newAddress.trim());
+        
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+        
+        const response = await res.text();
+        
+        if (response.includes("SUCCESS")) {
+            appAddress = newAddress.trim();
+            document.getElementById('headerAddress').textContent = appAddress;
+            showToast("Address saved successfully!");
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+            if (modal) modal.hide();
+        } else {
+            showToast("Error saving address: " + response);
+        }
+    } catch (e) {
+        showToast("Error: " + e.message);
+    }
+}
+
+// --- MASTER ADMIN LOGIN ---
+function masterAdminLogin() {
+    const pin = prompt("Enter Administrator PIN:");
+    if(pin === '786605') {
+        isMasterAdmin = true;
+        loginSuccess({
+            name: "Master Administrator",
+            area: "All Areas",
+            isMaster: true
+        });
+    } else {
+        showToast("Invalid Administrator PIN");
+    }
+}
+
+// --- AUTH UI ---
+function showLoginPage(){
+    $('#forgotPage, #registrationPage').hide();
+    $('#loginPage').show();
+}
+
+function showRegistrationForm(){
+    $('#loginPage, #forgotPage').hide();
+    $('#registrationPage').show();
+}
+
+function showForgotPage(){
+    $('#loginPage, #registrationPage').hide();
+    $('#forgotPage').show();
+}
+
+// --- LOGIN ---
+async function submitLogin(){
+    let phone = document.getElementById('loginPhone').value.trim();
+    const pin = document.getElementById('loginPin').value.trim();
+
+    if(pin === '786605'){
+        isMasterAdmin = true;
+        loginSuccess({name:"Master Administrator", area:"All Areas", isMaster: true});
+        return;
+    }
+
+    if(!phone || !pin){
+        showToast("Enter phone & PIN");
+        return;
+    }
+
+    if(!phone.startsWith("0")) phone = "0"+phone;
+
+    showToast("Verifying...");
+
+    try{
+        const res = await fetch(`${SCRIPT_URL}?action=getAdmins&t=${Date.now()}`);
+        const data = await res.json();
+        admins = data || [];
+        
+        const user = admins.find(a => a.phone == phone && a.pin == pin);
+
+        if(user && user.status === 'Active'){
+            isMasterAdmin = false;
+            loginSuccess(user);
+        }else{
+            showToast("Invalid Credentials or Account Pending/Locked");
+        }
+    }catch(e){
+        showToast("Connection Error");
+    }
+}
+
+// --- REGISTER ADMIN WITH PHOTO ---
+async function registerAdmin(){
+    let phone = document.getElementById('regPhone').value.trim();
+    if(!phone.startsWith("0")) phone = "0"+phone;
+
+    const formData = new FormData();
+    formData.append('action', 'registerAdmin');
+    formData.append('sheet', 'admins');
+    formData.append('name', document.getElementById('regName').value);
+    formData.append('phone', phone);
+    formData.append('area', document.getElementById('regArea').value);
+    formData.append('pin', document.getElementById('regPin').value);
+    formData.append('status', 'Pending');
+
+    // Handle admin photo
+    const photoFile = document.getElementById('regPhoto').files[0];
+    if (photoFile) {
+        if (validateAndPreviewImage(document.getElementById('regPhoto'), 'regPhotoPreview')) {
+            const base64 = await fileToBase64(photoFile);
+            formData.append('photo', base64);
+            
+            // Create filename: adminname_phone
+            const adminName = document.getElementById('regName').value.trim().replace(/[^a-zA-Z0-9]/g, '_');
+            const cleanPhone = phone.replace(/[^0-9]/g, '');
+            const fileExtension = photoFile.name.split('.').pop();
+            const customFileName = `admin_${adminName}_${cleanPhone}.${fileExtension}`;
+            
+            formData.append('photoName', customFileName);
+            formData.append('photoType', photoFile.type);
+        }
+    }
+
+    if(!document.getElementById('regName').value || !document.getElementById('regPin').value) {
+        return showToast("Fill all fields");
+    }
+
+    try {
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        const response = await res.text();
+        
+        if (response.includes("SUCCESS")) {
+            showToast("Registration Sent! Awaiting Approval.");
+            showLoginPage();
+        } else {
+            showToast("Registration Error: " + response);
+        }
+    } catch(e) {
+        showToast("Registration Error: " + e.message);
+    }
+}
+
+// --- RESET PIN ---
+async function resetPin(){
+    let phone = document.getElementById('fpPhone').value.trim();
+    const newPin = document.getElementById('fpNewPin').value;
+
+    if(!phone.startsWith("0")) phone = "0"+phone;
+
+    if(!phone || !newPin) return showToast("Fill all fields");
+    if(newPin.length !== 6) return showToast("PIN must be 6 digits");
+
+    showToast("Updating...");
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'resetPin');
+        formData.append('phone', phone);
+        formData.append('pin', newPin);
+
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await res.text();
+
+        if(result.includes("SUCCESS")){
+            showToast("PIN Reset Successful!");
+            showLoginPage();
+        }else{
+            showToast("Mobile not found!");
+        }
+    }catch(e){
+        showToast("Connection Error");
+    }
+}
+
+// --- LOGIN SUCCESS ---
+function loginSuccess(user){
+    currentAdmin = user;
+    localforage.setItem('user', user);
+    $('#loginPage, #registrationPage, #forgotPage').hide();
+    $('#mainApp').show();
+    
+    // Update header
+    document.getElementById('headerAdminName').innerText = user.name;
+    document.getElementById('headerAdminArea').innerText = user.area + (isMasterAdmin ? ' (Administrator)' : '');
+    
+    // Show/hide settings button based on master admin status
+    const settingsButton = document.getElementById('settingsButton');
+    if (settingsButton) {
+        settingsButton.style.display = isMasterAdmin ? 'inline-block' : 'none';
+    }
+    
+    // Load settings from sheet
+    loadSettings();
+    
+    // Show admin requests section only for master admin
+    if(isMasterAdmin) {
+        document.getElementById('adminRequestsSection').style.display = 'block';
+        // Make sure the admin views are visible in the tab buttons
+        const adminTab1 = document.getElementById('tab-adminRequests');
+        const adminTab2 = document.getElementById('tab-manageAdmins');
+        if (adminTab1) adminTab1.style.display = 'block';
+        if (adminTab2) adminTab2.style.display = 'block';
+        
+        // Load admins data
+        loadAdmins();
+    } else {
+        document.getElementById('adminRequestsSection').style.display = 'none';
+    }
+    
+    loadData();
+}
+
+// --- LOAD ADMINS (for master admin) ---
+async function loadAdmins() {
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=getAdmins&t=${Date.now()}`);
+        admins = await res.json();
+        renderAdminViews();
+    } catch(e) {
+        showToast("Error loading admins");
+    }
+}
+
+// --- UPDATE ADMIN STATUS ---
+async function updateAdminStatus(phone, newStatus) {
+    try {
+        showToast("Updating admin status...");
+        
+        const formData = new FormData();
+        formData.append('action', 'updateAdminStatus');
+        formData.append('sheet', 'admins');
+        formData.append('phone', phone);
+        formData.append('status', newStatus);
+        
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+        
+        const responseText = await res.text();
+        
+        if(responseText.includes("SUCCESS")) {
+            showToast(`Admin ${newStatus} successfully!`);
+            await loadAdmins();
+        } else {
+            showToast(`Error: ${responseText}`);
+        }
+    } catch(e) {
+        showToast("Error updating admin: " + e.message);
+    }
+}
+
+// --- VALIDATE AND PREVIEW IMAGE ---
+function validateAndPreviewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const file = input.files[0];
+    
+    if (!file) {
+        preview.style.display = 'none';
+        return true;
+    }
+    
+    // Check file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        showToast("Error: Only JPG, JPEG, and PNG files are allowed!");
+        input.value = '';
+        preview.style.display = 'none';
+        return false;
+    }
+    
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+        showToast(`Error: File size must be less than 5MB! (Current: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+        input.value = '';
+        preview.style.display = 'none';
+        return false;
+    }
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+    }
+    reader.readAsDataURL(file);
+    return true;
+}
+
+function validateImageFile(file) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        showToast("Error: Only JPG, JPEG, and PNG files are allowed!");
+        return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+        showToast(`Error: File size must be less than 5MB! (Current: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+        return false;
+    }
+    return true;
+}
+
+// --- CONVERT FILE TO BASE64 ---
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+// --- SANITIZE FILENAME ---
+function sanitizeFilename(name, phone, extension, prefix = '') {
+    // Remove special characters and spaces, replace with underscores
+    const cleanName = name
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+    
+    // Remove all non-numeric characters from phone
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    
+    // Truncate if too long
+    const maxLength = 200;
+    let filename = prefix ? `${prefix}_${cleanName}_${cleanPhone}.${extension}` : `${cleanName}_${cleanPhone}.${extension}`;
+    
+    if (filename.length > maxLength) {
+        const availableLength = maxLength - (cleanPhone.length + extension.length + (prefix ? prefix.length + 2 : 1));
+        const truncatedName = cleanName.substring(0, availableLength);
+        filename = prefix ? `${prefix}_${truncatedName}_${cleanPhone}.${extension}` : `${truncatedName}_${cleanPhone}.${extension}`;
+    }
+    
+    return filename;
+}
+
+// --- SAVE DATA WITH PHOTO ---
+async function saveDataWithPhoto(type) {
+    try {
+        showToast("Saving...");
+        
+        const formData = new FormData();
+        formData.append('action', 'saveData');
+        formData.append('sheet', type + "s");
+        formData.append('admin', currentAdmin.name);
+
+        if (type === 'donor') {
+            let phone = document.getElementById('dPhone').value.trim();
+            if (!phone.startsWith("0")) phone = "0" + phone;
+            
+            const donorName = document.getElementById('dName').value.trim();
+
+            formData.append('date', document.getElementById('dDate').value);
+            formData.append('name', donorName);
+            formData.append('phone', phone);
+            formData.append('area', document.getElementById('dArea').value);
+            
+            const photoFile = document.getElementById('dPhoto').files[0];
+            if (photoFile) {
+                if (validateAndPreviewImage(document.getElementById('dPhoto'), 'donorPreview')) {
+                    const base64 = await fileToBase64(photoFile);
+                    formData.append('photo', base64);
+                    
+                    const fileExtension = photoFile.name.split('.').pop();
+                    const customFileName = sanitizeFilename(donorName, phone, fileExtension);
+                    
+                    formData.append('photoName', customFileName);
+                    formData.append('photoType', photoFile.type);
+                }
+            }
+        }
+
+        if (type === 'receipt') {
+            formData.append('date', document.getElementById('rDate').value);
+            formData.append('donor', document.getElementById('rDonor').value);
+            formData.append('amount', document.getElementById('rAmount').value);
+            
+            const photoFile = document.getElementById('rPhoto').files[0];
+            if (photoFile) {
+                if (validateAndPreviewImage(document.getElementById('rPhoto'), 'receiptPreview')) {
+                    const base64 = await fileToBase64(photoFile);
+                    formData.append('photo', base64);
+                    
+                    const donorName = document.getElementById('rDonor').value;
+                    const receiptDate = document.getElementById('rDate').value.replace(/-/g, '');
+                    const fileExtension = photoFile.name.split('.').pop();
+                    const customFileName = `receipt_${donorName.replace(/[^a-zA-Z0-9]/g, '_')}_${receiptDate}.${fileExtension}`;
+                    
+                    formData.append('photoName', customFileName);
+                    formData.append('photoType', photoFile.type);
+                }
+            }
+        }
+
+        if (type === 'payment') {
+            formData.append('date', document.getElementById('pDate').value);
+            formData.append('paidTo', document.getElementById('pTo').value);
+            formData.append('purpose', document.getElementById('pPurpose').value);
+            formData.append('mode', document.getElementById('pMode').value);
+            formData.append('amount', document.getElementById('pAmount').value);
+        }
+
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        const responseText = await res.text();
+        
+        if (responseText.includes("SUCCESS")) {
+            // Hide modal using Bootstrap
+            const modalId = `add${type.charAt(0).toUpperCase() + type.slice(1)}Modal`;
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
+            
+            // Clear file input and preview
+            if (type === 'donor') {
+                document.getElementById('dPhoto').value = '';
+                document.getElementById('donorPreview').style.display = 'none';
+            }
+            if (type === 'receipt') {
+                document.getElementById('rPhoto').value = '';
+                document.getElementById('receiptPreview').style.display = 'none';
+            }
+            
+            showToast("Saved successfully!");
+            loadData();
+        } else {
+            showToast("Error: " + responseText);
+        }
+    } catch (e) {
+        showToast("Error saving data: " + e.message);
+    }
+}
+
+// --- UPDATE DONOR FUNCTION ---
+function editDonor(donor) {
+    document.getElementById('editDonorId').value = donor.phone || donor.id;
+    document.getElementById('editDonorPhotoUrl').value = donor.photo || '';
+    document.getElementById('editDDate').value = donor.date || '';
+    document.getElementById('editDName').value = donor.name || donor.donorname || '';
+    document.getElementById('editDPhone').value = donor.phone || '';
+    document.getElementById('editDArea').value = donor.area || '';
+    
+    // Show existing photo if available
+    if (donor.photo) {
+        const preview = document.getElementById('editDonorPreview');
+        preview.src = donor.photo;
+        preview.style.display = 'block';
+    } else {
+        document.getElementById('editDonorPreview').style.display = 'none';
+    }
+    
+    // Clear file input
+    document.getElementById('editDPhoto').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editDonorModal'));
+    modal.show();
+}
+
+// --- UPDATE DONOR WITH PHOTO ---
+async function updateDonorWithPhoto() {
+    try {
+        showToast("Updating...");
+        
+        const formData = new FormData();
+        formData.append('action', 'updateDonor');
+        formData.append('sheet', 'donors');
+        formData.append('oldPhone', document.getElementById('editDonorId').value);
+        formData.append('date', document.getElementById('editDDate').value);
+        
+        const donorName = document.getElementById('editDName').value.trim();
+        formData.append('name', donorName);
+        
+        let phone = document.getElementById('editDPhone').value.trim();
+        if (!phone.startsWith("0")) phone = "0" + phone;
+        formData.append('phone', phone);
+        
+        formData.append('area', document.getElementById('editDArea').value);
+        formData.append('admin', currentAdmin.name);
+        
+        const photoFile = document.getElementById('editDPhoto').files[0];
+        if (photoFile) {
+            if (validateAndPreviewImage(document.getElementById('editDPhoto'), 'editDonorPreview')) {
+                const base64 = await fileToBase64(photoFile);
+                formData.append('photo', base64);
+                
+                const fileExtension = photoFile.name.split('.').pop();
+                const customFileName = sanitizeFilename(donorName, phone, fileExtension);
+                
+                formData.append('photoName', customFileName);
+                formData.append('photoType', photoFile.type);
+            }
+        } else {
+            formData.append('existingPhoto', document.getElementById('editDonorPhotoUrl').value);
+        }
+
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        const responseText = await res.text();
+        
+        if (responseText.includes("SUCCESS")) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editDonorModal'));
+            modal.hide();
+            
+            showToast("Donor Updated!");
+            loadData();
+        } else {
+            showToast("Error: " + responseText);
+        }
+    } catch (e) {
+        showToast("Error updating donor: " + e.message);
+    }
+}
+
+// --- DELETE DONOR ---
+async function deleteDonor(phone) {
+    if (confirm("Are you sure you want to delete this donor?")) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'deleteDonor');
+            formData.append('sheet', 'donors');
+            formData.append('phone', phone);
+            
+            await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: formData
+            });
+            
+            showToast("Donor Deleted!");
+            loadData();
+        } catch (e) {
+            showToast("Error deleting donor");
+        }
+    }
+}
+
+// --- LOAD DATA ---
+async function loadData() {
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=getAllData&t=${Date.now()}`);
+        const data = await res.json();
+        donors = data.donors || [];
+        receipts = data.receipts || [];
+        payments = data.payments || [];
+        renderUI();
+    } catch (e) {
+        showToast("Offline Mode - Using cached data");
+    }
+}
+
+// --- RENDER UI ---
+function renderUI() {
+    // Stats
+    const totalR = receipts.reduce((a, b) => a + Number(b.amount || 0), 0);
+    const totalP = payments.reduce((a, b) => a + Number(b.amount || 0), 0);
+
+    document.getElementById('statReceipts').innerText = receipts.length;
+    document.getElementById('statAmount').innerText = totalR;
+    document.getElementById('statDonors').innerText = donors.length;
+    document.getElementById('statBalance').innerText = totalR - totalP;
+
+    // Donors List with Edit/Delete buttons (only for master admin)
+    document.getElementById('donorsList').innerHTML = donors.map(d => {
+        const donorName = d.name || d.donorname || 'N/A';
+        const donorPhone = d.phone || 'No Phone';
+        const donorArea = d.area || '';
+        const photoUrl = d.photo || d.image || '';
+        
+        return `
+        <div class="list-item">
+            <div style="display: flex; align-items: center;">
+                ${photoUrl ? `<img src="${photoUrl}" class="donor-photo" onerror="this.style.display='none'">` : ''}
+                <div>
+                    <strong>${donorName}</strong><br>
+                    <small>${donorPhone} | ${donorArea}</small>
+                </div>
+            </div>
+            <div class="list-item-actions">
+                ${photoUrl ? `<a href="${photoUrl}" target="_blank"><i class="bi bi-image"></i></a>` : ''}
+                ${isMasterAdmin ? `
+                    <i class="bi bi-pencil-square edit-btn" onclick='editDonor(${JSON.stringify(d).replace(/'/g, "&apos;")})'></i>
+                    <i class="bi bi-trash delete-btn" onclick="deleteDonor('${donorPhone}')"></i>
+                ` : ''}
+            </div>
+        </div>
+    `}).join('');
+
+    // Fill Donor Select in Receipt Modal
+    const rSelect = document.getElementById('rDonor');
+    rSelect.innerHTML = '<option>Select Donor</option>' + donors.map(d => `<option>${d.name || d.donorname}</option>`).join('');
+
+    // Receipts List
+    document.getElementById('receiptsList').innerHTML = receipts.map(r => `
+        <div class="list-item">
+            <div>
+                <strong>${r.donor || ''}</strong><br>
+                <small>${r.date || ''}</small>
+            </div>
+            <div><strong>${r.amount || 0}</strong></div>
+        </div>
+    `).join('');
+
+    // Payments List
+    document.getElementById('paymentsList').innerHTML = payments.map(p => `
+        <div class="list-item">
+            <div>
+                <strong>${p.paidTo || p.paidto || 'N/A'}</strong><br>
+                <small>${p.purpose || ''} | ${p.mode || ''}</small>
+            </div>
+            <div><strong>${p.amount || 0}</strong></div>
+        </div>
+    `).join('');
+
+    // Donor Summary
+    let donorSum = {};
+    receipts.forEach(r => {
+        const d = r.donor || "Unknown";
+        donorSum[d] = (donorSum[d] || 0) + Number(r.amount || 0);
+    });
+    document.getElementById('donorSummaryList').innerHTML = Object.keys(donorSum).map(k => `
+        <div class="list-item"><span>${k}</span><strong>${donorSum[k]}</strong></div>
+    `).join('');
+
+    // Period Summary
+    let periodSum = {};
+    receipts.forEach(r => {
+        if (r.date) {
+            const d = new Date(r.date);
+            const key = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+            periodSum[key] = (periodSum[key] || 0) + Number(r.amount || 0);
+        }
+    });
+    document.getElementById('periodSummaryList').innerHTML = Object.keys(periodSum).map(k => `
+        <div class="list-item"><span>${k}</span><strong>${periodSum[k]}</strong></div>
+    `).join('');
+
+    // Area Summary
+    let areaSum = {};
+    receipts.forEach(r => {
+        const donor = donors.find(d => (d.name || d.donorname) === r.donor);
+        const area = donor?.area || "Unknown";
+        areaSum[area] = (areaSum[area] || 0) + Number(r.amount || 0);
+    });
+    document.getElementById('areaSummaryList').innerHTML = Object.keys(areaSum).map(k => `
+        <div class="list-item"><span>${k}</span><strong>${areaSum[k]}</strong></div>
+    `).join('');
+}
+
+// --- RENDER ADMIN VIEWS (for master admin) ---
+function renderAdminViews() {
+    if (!isMasterAdmin) return;
+    
+    // Pending Requests
+    const pendingAdmins = admins.filter(a => a.status === 'Pending');
+    document.getElementById('adminRequestsList').innerHTML = pendingAdmins.map(a => {
+        const photoUrl = a.photo || '';
+        return `
+        <div class="list-item">
+            <div style="display: flex; align-items: center;">
+                ${photoUrl ? `<img src="${photoUrl}" class="admin-photo" onerror="this.style.display='none'">` : ''}
+                <div>
+                    <strong>${a.name}</strong><br>
+                    <small>${a.phone} | ${a.area}</small>
+                </div>
+            </div>
+            <div>
+                <span class="status-badge status-pending">Pending</span>
+                <i class="bi bi-check-circle approve-btn" onclick="updateAdminStatus('${a.phone}', 'Active')" title="Approve"></i>
+                <i class="bi bi-x-circle reject-btn" onclick="updateAdminStatus('${a.phone}', 'Rejected')" title="Reject"></i>
+            </div>
+        </div>
+    `}).join('') || '<div class="list-item">No pending requests</div>';
+
+    // All Admins Management
+    document.getElementById('manageAdminsList').innerHTML = admins.map(a => {
+        const status = a.status || 'Active';
+        const statusClass = status === 'Active' ? 'status-active' : status === 'Pending' ? 'status-pending' : 'status-locked';
+        const photoUrl = a.photo || '';
+        
+        let actionButtons = '';
+        if (status === 'Active') {
+            actionButtons = `<i class="bi bi-lock lock-btn" onclick="updateAdminStatus('${a.phone}', 'Locked')" title="Lock Admin"></i>`;
+        } else if (status === 'Locked') {
+            actionButtons = `<i class="bi bi-unlock approve-btn" onclick="updateAdminStatus('${a.phone}', 'Active')" title="Unlock Admin"></i>`;
+        } else if (status === 'Pending') {
+            actionButtons = `
+                <i class="bi bi-check-circle approve-btn" onclick="updateAdminStatus('${a.phone}', 'Active')" title="Approve"></i>
+                <i class="bi bi-x-circle reject-btn" onclick="updateAdminStatus('${a.phone}', 'Rejected')" title="Reject"></i>
+            `;
+        }
+        
+        return `
+        <div class="list-item">
+            <div style="display: flex; align-items: center;">
+                ${photoUrl ? `<img src="${photoUrl}" class="admin-photo" onerror="this.style.display='none'">` : ''}
+                <div>
+                    <strong>${a.name || 'Unknown'}</strong><br>
+                    <small>${a.phone || 'No phone'} | ${a.area || 'No area'}</small>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="status-badge ${statusClass}">${status}</span>
+                ${actionButtons}
+            </div>
+        </div>
+    `}).join('') || '<div class="list-item">No admins found</div>';
+}
+
+// --- SEARCH FUNCTION ---
+function searchInView(view) {
+    const searchTerm = document.getElementById(`search${view.charAt(0).toUpperCase() + view.slice(1)}`).value.toLowerCase();
+    
+    if (view === 'donors') {
+        const filtered = donors.filter(d =>
+            (d.name || d.donorname || '').toLowerCase().includes(searchTerm) ||
+            (d.phone || '').includes(searchTerm) ||
+            (d.area || '').toLowerCase().includes(searchTerm)
+        );
+        
+        document.getElementById('donorsList').innerHTML = filtered.map(d => {
+            const photoUrl = d.photo || d.image || '';
+            return `
+            <div class="list-item">
+                <div style="display: flex; align-items: center;">
+                    ${photoUrl ? `<img src="${photoUrl}" class="donor-photo" onerror="this.style.display='none'">` : ''}
+                    <div>
+                        <strong>${d.name || d.donorname || 'N/A'}</strong><br>
+                        <small>${d.phone || 'No Phone'} | ${d.area || ''}</small>
+                    </div>
+                </div>
+                <div class="list-item-actions">
+                    ${photoUrl ? `<a href="${photoUrl}" target="_blank"><i class="bi bi-image"></i></a>` : ''}
+                    ${isMasterAdmin ? `
+                        <i class="bi bi-pencil-square edit-btn" onclick='editDonor(${JSON.stringify(d).replace(/'/g, "&apos;")})'></i>
+                        <i class="bi bi-trash delete-btn" onclick="deleteDonor('${d.phone}')"></i>
+                    ` : ''}
+                </div>
+            </div>
+        `}).join('');
+    }
+}
+
+// --- UI HELPER FUNCTIONS ---
+function switchTab(tab) {
+    $('.tab-btn').removeClass('active');
+    $(`#tab-${tab}`).addClass('active');
+    $('[id$="View"]').hide();
+    $(`#${tab}View`).show();
+    
+    // If switching to admin views, refresh admin data
+    if ((tab === 'adminRequests' || tab === 'manageAdmins') && isMasterAdmin) {
+        loadAdmins();
+    }
+}
+
+function openModal(id) {
+    const modal = new bootstrap.Modal(document.getElementById(id));
+    modal.show();
+}
+
+function showToast(message) {
+    $('#toast').text(message).fadeIn().delay(2000).fadeOut();
+}
+
+function logout() {
+    localforage.clear();
+    location.reload();
+}
+
+function showSettings() {
+    if (!isMasterAdmin) {
+        showToast("Settings only available for Administrator");
+        return;
+    }
+    document.getElementById('newPageTitle').value = appTitle;
+    document.getElementById('newAddress').value = appAddress;
+    const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+    modal.show();
+}
+
+function exportToExcel() {
+    const wb = XLSX.utils.book_new();
+
+    // --- Donors Sheet ---
+    const donorsSheet = XLSX.utils.json_to_sheet(donors);
+    XLSX.utils.book_append_sheet(wb, donorsSheet, "Donors");
+
+    // --- Receipts Sheet ---
+    const receiptsSheet = XLSX.utils.json_to_sheet(receipts);
+    XLSX.utils.book_append_sheet(wb, receiptsSheet, "Receipts");
+
+    // --- Payments Sheet ---
+    const paymentsSheet = XLSX.utils.json_to_sheet(payments);
+    XLSX.utils.book_append_sheet(wb, paymentsSheet, "Payments");
+
+    // --- Download ---
+    XLSX.writeFile(wb, "Falah-e-Qabarstan_Data.xlsx");
+    showToast("Exported Successfully!");
+}
+
+function generateSummary(type) {
+    let summary = {};
+
+    if (type === 'donor') {
+        receipts.forEach(r => {
+            const donor = r.donor || "Unknown";
+            summary[donor] = (summary[donor] || 0) + Number(r.amount || 0);
+        });
+    } else if (type === 'period') {
+        receipts.forEach(r => {
+            const date = r.date || "Unknown";
+            summary[date] = (summary[date] || 0) + Number(r.amount || 0);
+        });
+    } else if (type === 'area') {
+        receipts.forEach(r => {
+            const donorName = r.donor;
+            const donorObj = donors.find(d => (d.name || d.donorname) === donorName);
+            const area = donorObj?.area || "Unknown";
+            summary[area] = (summary[area] || 0) + Number(r.amount || 0);
+        });
+    }
+
+    const summaryArray = Object.keys(summary).map(key => ({
+        category: key,
+        total: summary[key]
+    }));
+
+    downloadSummaryExcel(summaryArray, type);
+}
+
+function downloadSummaryExcel(data, type) {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    let name = "";
+    if (type === 'donor') name = "Donor Summary";
+    if (type === 'period') name = "Period Summary";
+    if (type === 'area') name = "Area Summary";
+
+    XLSX.utils.book_append_sheet(wb, ws, name);
+    XLSX.writeFile(wb, `${name}.xlsx`);
+    showToast(name + " Downloaded!");
+}
+
+// INIT
+window.onload = async () => {
+    const u = await localforage.getItem('user');
+    if (u) {
+        if (u.name === "Master Administrator") {
+            isMasterAdmin = true;
+        }
+        loginSuccess(u);
+    } else {
+        // Load settings even if not logged in
+        loadSettings();
+    }
+};
+</script>
+</body>
+</html>
