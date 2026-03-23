@@ -812,8 +812,8 @@ function masterAdminLogin() {
     if(pin === '786605') {
         isMasterAdmin = true;
         loginSuccess({
-            name: "Master Administrator",
-            area: "All Areas",
+            name: "Master Admin",
+            area: "All",
             isMaster: true
         });
     } else {
@@ -878,7 +878,7 @@ async function submitLogin(){
 // --- REGISTER ADMIN WITH PHOTO ---
 async function registerAdmin(){
     let phone = document.getElementById('regPhone').value.trim();
-    if(!phone.startsWith("0")) phone = "0"+phone;
+   // if(!phone.startsWith("0")) phone = phone;
 
     const formData = new FormData();
     formData.append('action', 'registerAdmin');
@@ -887,7 +887,7 @@ async function registerAdmin(){
     formData.append('phone', phone);
     formData.append('area', document.getElementById('regArea').value);
     formData.append('pin', document.getElementById('regPin').value);
-    formData.append('status', 'Pending');
+    
 
     // Handle admin photo
     const photoFile = document.getElementById('regPhoto').files[0];
@@ -905,6 +905,7 @@ async function registerAdmin(){
             formData.append('photoName', customFileName);
             formData.append('photoType', photoFile.type);
         }
+        formData.append('status', 'Pending');
     }
 
     if(!document.getElementById('regName').value || !document.getElementById('regPin').value) {
